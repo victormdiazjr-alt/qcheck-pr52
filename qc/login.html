@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QCheck — Acceso</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230a0d12'/><circle cx='50' cy='50' r='26' fill='none' stroke='%2396c93d' stroke-width='8'/></svg>">
+<style>
+:root {
+  --bg: #0a0d12; --surface: #12171f; --surface-2: #1a2029;
+  --text: #eef2f6; --muted: #77848f; --hairline: rgba(255,255,255,.11);
+  --ok: #34d27b; --susp: #ff5a52; --navy: #4a63d8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background:
+    radial-gradient(900px 520px at 78% -8%, rgba(74,99,216,.20), transparent 62%),
+    radial-gradient(700px 420px at 12% 108%, rgba(150,201,61,.12), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  display: flex; align-items: center; justify-content: center;
+  padding: 6vh 6vw;
+}
+.card {
+  width: 100%; max-width: 420px;
+  background: linear-gradient(168deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--hairline); border-radius: 22px;
+  padding: 40px 34px 30px;
+  box-shadow: 0 22px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.brand { display: flex; align-items: center; gap: 13px; margin-bottom: 6px; }
+.brand svg { height: 46px; width: auto; }
+.brand .n { font-size: 27px; font-weight: 800; letter-spacing: -.01em; }
+.sub { color: var(--muted); font-size: 13px; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; margin-bottom: 30px; }
+label { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+input {
+  width: 100%; background: rgba(0,0,0,.28); border: 1.5px solid var(--hairline);
+  color: var(--text); border-radius: 12px; padding: 14px 15px;
+  font-size: 16px; font-family: inherit; margin-bottom: 18px;
+}
+input:focus { outline: none; border-color: var(--navy); background: rgba(0,0,0,.4); }
+button {
+  width: 100%; background: var(--ok); color: #06180d; border: none;
+  border-radius: 12px; padding: 16px; font-size: 15px; font-weight: 850;
+  letter-spacing: .14em; text-transform: uppercase; font-family: inherit; cursor: pointer;
+  transition: transform .14s, filter .14s;
+}
+button:hover { filter: brightness(1.07); }
+button:active { transform: scale(.98); }
+.err {
+  display: none; background: rgba(255,90,82,.13); border: 1px solid var(--susp);
+  color: var(--susp); border-radius: 10px; padding: 11px 13px; font-size: 13px;
+  font-weight: 600; margin-bottom: 16px;
+}
+.err.show { display: block; }
+.hint {
+  margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--hairline);
+  font-size: 12px; color: var(--muted); line-height: 1.65;
+}
+.hint b { color: var(--text); font-variant-numeric: tabular-nums; }
+.hint .demo { display: inline-block; font-size: 9.5px; font-weight: 800; letter-spacing: .18em;
+  color: #f5b83d; border: 1px solid rgba(245,184,61,.45); background: rgba(245,184,61,.1);
+  border-radius: 999px; padding: 3px 9px; margin-bottom: 8px; }
+.back { display: block; text-align: center; margin-top: 20px; color: var(--muted); font-size: 12.5px; text-decoration: none; }
+.back:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<form class="card" onsubmit="entrar(event)">
+  <div class="brand">
+    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M 69.7 93.6 A 40 40 0 1 1 95.85 59.49" fill="none" stroke="var(--navy)" stroke-width="15"/>
+      <polyline points="62,64 86,82 114,46" fill="none" stroke="#96c93d" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="n">QCheck</span>
+  </div>
+  <div class="sub">Control de Hormigón · PR-52</div>
+
+  <div class="err" id="err">Usuario o contraseña incorrectos.</div>
+
+  <label for="u">Usuario</label>
+  <input id="u" autocapitalize="none" autocorrect="off" autocomplete="username" required>
+
+  <label for="p">Contraseña</label>
+  <input id="p" type="password" autocomplete="current-password" required>
+
+  <button type="submit">Entrar</button>
+
+  <div class="hint">
+    <span class="demo">DEMOSTRACIÓN</span><br>
+    Acceso de prueba: usuario <b>admin</b> · contraseña <b>1234</b>.<br>
+    Puerta de demostración — la autenticación real llega con el backend.
+  </div>
+  <a class="back" href="../index.html">← Plataforma PR-52</a>
+</form>
+
+<script>
+"use strict";
+function entrar(e) {
+  e.preventDefault();
+  const u = document.getElementById("u").value.trim().toLowerCase();
+  const p = document.getElementById("p").value;
+  if (u === "admin" && p === "1234") {
+    sessionStorage.setItem("qc-auth", "1");
+    const next = new URLSearchParams(location.search).get("next");
+    // solo rutas internas: nunca redirigir a un destino externo
+    const destino = next && /^[\w.-]+\.html([?#].*)?$/.test(next) ? next : "index.html";
+    location.replace(destino);
+  } else {
+    document.getElementById("err").classList.add("show");
+    document.getElementById("p").value = "";
+    document.getElementById("p").focus();
+  }
+}
+document.getElementById("u").focus();
+</script>
+</body>
+</html>
