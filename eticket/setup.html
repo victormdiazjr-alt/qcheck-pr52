@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Configuración — e-Ticket</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230b0e13'/><rect x='26' y='26' width='30' height='30' rx='6' fill='none' stroke='%23ff9f43' stroke-width='9'/><rect x='64' y='64' width='12' height='12' fill='%23ff9f43'/></svg>">
+<link rel="stylesheet" href="eticket.css">
+</head>
+<body>
+
+<header>
+  <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="e-Ticket">
+    <rect x="8" y="8" width="40" height="40" rx="9" fill="none" stroke="var(--brand)" stroke-width="11"/>
+    <rect x="8" y="60" width="26" height="26" rx="6" fill="none" stroke="var(--brand)" stroke-width="11"/>
+    <rect x="60" y="8" width="26" height="26" rx="6" fill="none" stroke="var(--muted-2)" stroke-width="11"/>
+    <rect x="60" y="52" width="13" height="13" fill="var(--brand)"/>
+    <rect x="79" y="52" width="13" height="13" fill="var(--muted-2)"/>
+    <rect x="60" y="73" width="13" height="13" fill="var(--muted-2)"/>
+    <rect x="79" y="73" width="13" height="13" fill="var(--brand)"/>
+  </svg>
+  <div class="hnames">
+    <div class="htitle">Configuración</div>
+    <div class="hsub" id="hsub">e-Ticket</div>
+  </div>
+  <div class="spacer"></div>
+  <button class="icon-btn" id="theme-toggle" title="Modo claro / oscuro" onclick="stToggleTheme()"></button>
+</header>
+
+<main class="setup">
+
+  <p class="intro" id="intro"></p>
+
+  <!-- ---------- compañía ---------- -->
+  <section class="card">
+    <h2 class="ctitle">Compañía</h2>
+    <p class="note">
+      El nombre de la concretera. <b>Forma parte de la llave de cada conduce</b>
+      (compañía + número): es lo que evita que un ticket suyo choque con el de otra
+      planta que use la misma numeración. Escríbalo una vez y no lo cambie después.
+    </p>
+    <div class="f big" style="max-width:520px">
+      <label for="s-company">Nombre de la compañía</label>
+      <input id="s-company" autocomplete="off" placeholder="ej. Hormigones del Este">
+    </div>
+  </section>
+
+  <!-- ---------- plantas ---------- -->
+  <section class="card">
+    <h2 class="ctitle">Plantas</h2>
+    <p class="note">Las plantas desde donde se despacha. Marque cuál es la predeterminada.</p>
+    <div class="rows" id="plants"></div>
+    <button class="btn-ghost small" onclick="stAddPlant()">+ Añadir planta</button>
+  </section>
+
+  <!-- ---------- mezclas ---------- -->
+  <section class="card">
+    <h2 class="ctitle">Mezclas</h2>
+    <p class="note">Los códigos de mezcla que produce. La descripción es opcional y no se imprime en el ticket.</p>
+    <div class="rows" id="mixes"></div>
+    <button class="btn-ghost small" onclick="stAddMix()">+ Añadir mezcla</button>
+  </section>
+
+  <!-- ---------- numeración ---------- -->
+  <section class="card">
+    <h2 class="ctitle">Numeración</h2>
+    <p class="note">Desde qué número arranca la secuencia de conduces. Cada ticket generado avanza el contador.</p>
+    <div class="f big" style="max-width:280px">
+      <label for="s-next">Próximo conduce</label>
+      <input id="s-next" inputmode="numeric" placeholder="ej. 1001">
+    </div>
+  </section>
+
+  <!-- ---------- papel ---------- -->
+  <section class="card">
+    <h2 class="ctitle">Papel del ticket</h2>
+    <p class="note">
+      Solo ajusta la maqueta de la hojita. <b>La impresora la escoge usted en el diálogo
+      de impresión del sistema</b> — el navegador no puede listarlas ni elegirlas por su cuenta.
+    </p>
+    <div class="papers" id="papers"></div>
+  </section>
+
+  <div class="setup-foot">
+    <button class="btn-ghost" id="btn-cancel" onclick="stCancel()">Cancelar</button>
+    <div class="spacer"></div>
+    <button class="btn-main" onclick="stSave()">Guardar configuración</button>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script src="config.js"></script>
+<script src="setup.js"></script>
+</body>
+</html>

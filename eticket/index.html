@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>e-Ticket — Despacho de planta</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230b0e13'/><rect x='26' y='26' width='30' height='30' rx='6' fill='none' stroke='%23ff9f43' stroke-width='9'/><rect x='64' y='64' width='12' height='12' fill='%23ff9f43'/></svg>">
+<link rel="stylesheet" href="eticket.css">
+</head>
+<body>
+
+<!-- ══════════════ encabezado ══════════════ -->
+<header id="top">
+  <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="e-Ticket">
+    <rect x="8" y="8" width="40" height="40" rx="9" fill="none" stroke="var(--brand)" stroke-width="11"/>
+    <rect x="8" y="60" width="26" height="26" rx="6" fill="none" stroke="var(--brand)" stroke-width="11"/>
+    <rect x="60" y="8" width="26" height="26" rx="6" fill="none" stroke="var(--muted-2)" stroke-width="11"/>
+    <rect x="60" y="52" width="13" height="13" fill="var(--brand)"/>
+    <rect x="79" y="52" width="13" height="13" fill="var(--muted-2)"/>
+    <rect x="60" y="73" width="13" height="13" fill="var(--muted-2)"/>
+    <rect x="79" y="73" width="13" height="13" fill="var(--brand)"/>
+  </svg>
+  <div class="hnames">
+    <div class="htitle">e-Ticket</div>
+    <div class="hsub" id="hsub">Despacho de planta</div>
+  </div>
+  <nav class="nav" style="margin-left:22px">
+    <a href="index.html" class="on">Despacho</a>
+    <a href="produccion.html">Producción</a>
+    <a href="setup.html">Ajustes</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="hclock"><span id="clock">--:--</span><s id="today">—</s></div>
+  <button class="icon-btn" id="theme-toggle" title="Modo claro / oscuro" onclick="etToggleTheme()"></button>
+</header>
+
+<div id="warn" class="warn" hidden></div>
+
+<!-- ══════════════ cuerpo ══════════════ -->
+<main>
+
+  <!-- ---------- columna izquierda: carga del camión ---------- -->
+  <section class="card form">
+    <h2 class="ctitle">Cargar camión <s class="co" id="f-company-label"></s></h2>
+
+    <div class="fgrid">
+      <div class="f big">
+        <label for="f-ticket">Conduce</label>
+        <input id="f-ticket" inputmode="numeric" autocomplete="off" placeholder="—">
+        <s class="hint" id="ticket-hint">sugerido automáticamente</s>
+      </div>
+
+      <div class="f big">
+        <label for="f-truck">Camión</label>
+        <input id="f-truck" autocomplete="off" placeholder="—">
+      </div>
+
+      <div class="f">
+        <label>Planta</label>
+        <select id="f-plant" class="sel"></select>
+      </div>
+
+      <div class="f">
+        <label>Mezcla</label>
+        <select id="f-mix" class="sel"></select>
+      </div>
+
+      <div class="f">
+        <label>Volumen (CY)</label>
+        <div class="stepper">
+          <button type="button" class="step" onclick="etVol(-0.5)" aria-label="menos">−</button>
+          <input id="f-vol" inputmode="decimal" value="10" class="stepval">
+          <button type="button" class="step" onclick="etVol(0.5)" aria-label="más">+</button>
+        </div>
+      </div>
+
+      <div class="f">
+        <label for="f-batch">Hora de cargado</label>
+        <div class="stepper">
+          <input id="f-batch" type="time" class="stepval">
+          <button type="button" class="step now" onclick="etNow()">AHORA</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="fbar">
+      <button class="btn-ghost" onclick="etResetForm()">Limpiar</button>
+      <div class="spacer"></div>
+      <button class="btn-main" id="btn-gen" onclick="etGenerate()">Generar ticket</button>
+    </div>
+  </section>
+
+  <!-- ---------- columna derecha: producción del día ---------- -->
+  <section class="card side">
+    <h2 class="ctitle">Hoy en la planta</h2>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="listhead">
+      <span>Tickets generados</span>
+      <s id="list-count">—</s>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="legend">
+      <i class="d-desp"></i>despachado
+      <i class="d-rec"></i>recibido
+      <i class="d-ok"></i>resultado
+      <i class="d-rej"></i>rechazado
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════ vista del ticket (hojita) ══════════════ -->
+<div id="slip-sheet" class="sheet">
+  <div class="sheet-inner">
+    <div id="slip-host"><!-- la hojita se inyecta aquí --></div>
+    <div class="sheet-foot">
+      <button class="btn-ghost" onclick="etCloseSlip()">Cerrar</button>
+      <button class="btn-main" onclick="window.print()">Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="../shared/conduce-contract.js"></script>
+<script src="config.js"></script>
+<script src="qr.js"></script>
+<script src="eticket.js"></script>
+</body>
+</html>

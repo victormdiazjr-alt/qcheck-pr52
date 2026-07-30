@@ -45,7 +45,16 @@ function conduceKey(t) { return (t.company || "—") + "·" + (t.ticket || "?");
 function findConduce(company, ticket) {
   return db.tests.find((t) => conduceKey(t) === (company || "—") + "·" + ticket) || null;
 }
-function saveDB() { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+/* QCheck es la fuente de verdad de los límites: los publica en cada guardado
+   para que la planta (e-Ticket) pueda colorear sus lecturas sin inventarlos.
+   Contrato v3 — ver shared/conduce-contract.js */
+function publishSpec() {
+  const C = typeof window !== "undefined" && window.ConduceContract;
+  if (C && C.publishMixSpec) {
+    try { C.publishMixSpec(db, db.project && db.project.mixId, db.plan); } catch (_) {}
+  }
+}
+function saveDB() { publishSpec(); localStorage.setItem(DB_KEY, JSON.stringify(db)); }
 
 /* Cross-window live sync: other open role screens re-render when
    any window writes the DB (storage events fire cross-tab).     */

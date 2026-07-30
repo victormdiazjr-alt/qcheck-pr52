@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Producción — e-Ticket</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230b0e13'/><rect x='26' y='26' width='30' height='30' rx='6' fill='none' stroke='%23ff9f43' stroke-width='9'/><rect x='64' y='64' width='12' height='12' fill='%23ff9f43'/></svg>">
+<link rel="stylesheet" href="eticket.css">
+</head>
+<body>
+
+<header>
+  <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="e-Ticket">
+    <rect x="8" y="8" width="40" height="40" rx="9" fill="none" stroke="var(--brand)" stroke-width="11"/>
+    <rect x="8" y="60" width="26" height="26" rx="6" fill="none" stroke="var(--brand)" stroke-width="11"/>
+    <rect x="60" y="8" width="26" height="26" rx="6" fill="none" stroke="var(--muted-2)" stroke-width="11"/>
+    <rect x="60" y="52" width="13" height="13" fill="var(--brand)"/>
+    <rect x="79" y="52" width="13" height="13" fill="var(--muted-2)"/>
+    <rect x="60" y="73" width="13" height="13" fill="var(--muted-2)"/>
+    <rect x="79" y="73" width="13" height="13" fill="var(--brand)"/>
+  </svg>
+  <div class="hnames">
+    <div class="htitle">Producción</div>
+    <div class="hsub">Tablero de planta</div>
+  </div>
+  <nav class="nav" style="margin-left:22px">
+    <a href="index.html">Despacho</a>
+    <a href="produccion.html" class="on">Producción</a>
+    <a href="setup.html">Ajustes</a>
+  </nav>
+  <div class="spacer"></div>
+  <select class="picker" id="p-plant" onchange="pdRender()"></select>
+  <select class="picker" id="p-day" onchange="pdRender()"></select>
+  <button class="icon-btn" id="theme-toggle" title="Modo claro / oscuro" onclick="pdToggleTheme()"></button>
+</header>
+
+<main class="prod">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="panels">
+    <section class="panel w8">
+      <h3>Calidad devuelta por el laboratorio</h3>
+      <div class="qgrid" id="quality"></div>
+      <p class="qsub" id="qnote" style="margin-top:14px"></p>
+    </section>
+
+    <section class="panel w4">
+      <h3>Ritmo de producción</h3>
+      <div class="lines" id="rate"></div>
+    </section>
+
+    <section class="panel w4">
+      <h3>Tiempos de ciclo</h3>
+      <div class="lines" id="cycle"></div>
+    </section>
+
+    <section class="panel w8">
+      <h3>Camiones del día</h3>
+      <div style="overflow-x:auto"><table class="tbl" id="trucks"></table></div>
+    </section>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="../shared/conduce-contract.js"></script>
+<script src="config.js"></script>
+<script src="produccion.js"></script>
+</body>
+</html>
