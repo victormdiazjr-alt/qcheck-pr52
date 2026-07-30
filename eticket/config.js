@@ -31,6 +31,31 @@ function etConfigRead() {
 function etConfigWrite(c) { localStorage.setItem(ET_CONFIG_KEY, JSON.stringify(c)); }
 function etConfigured() { return etConfigRead() != null; }
 
+/* ------------------------------------------------------------ facturación
+   Tarifas de la planta. Viajan dentro del QR (en el fragmento) porque el
+   teléfono del cliente nunca ha visto esta configuración: la página pública
+   vive solo de lo que trae la URL. */
+function etBilling(c) {
+  const b = (c && c.billing) || {};
+  return {
+    price: Number(b.price) || 0,      // $ por CY
+    tripFee: Number(b.tripFee) || 0,  // $ por viaje
+    taxPct: Number(b.taxPct) || 0,    // % de impuesto
+  };
+}
+function etBillingReady(c) { return etBilling(c).price > 0; }
+
+/* Calcula la factura. Misma fórmula que usa la página del cliente. */
+function etInvoice({ vol, price, tripFee, extra, taxPct }) {
+  const cy = Number(vol) || 0;
+  const material = cy * (Number(price) || 0);
+  const viaje = Number(tripFee) || 0;
+  const otros = Number(extra) || 0;
+  const subtotal = material + viaje + otros;
+  const tax = subtotal * ((Number(taxPct) || 0) / 100);
+  return { cy, material, viaje, otros, subtotal, tax, total: subtotal + tax };
+}
+
 function etDefaultPlant(c) {
   const d = c.plants.find((p) => p.default);
   return (d || c.plants[0]).name;

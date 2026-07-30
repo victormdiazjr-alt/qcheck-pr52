@@ -1,17 +1,15 @@
 /* ============================================================
    e-Ticket — Despacho / Carga.  Producto de la concretera.
 
-   Autónomo por diseño: no importa nada de QCheck.
-   El único punto de contacto es shared/conduce-contract.js (v2):
-     · ConduceContract.keyOf()        llave = compañía + conduce
-     · ConduceContract.ORIGIN_FIELDS  lo único que la planta escribe
-     · ConduceContract.newRecord()    fábrica única del record
-     · ConduceContract.ensureStore()  arranque del almacén
-     · ConduceContract.encodeQR()     carga útil del QR
-     · ConduceContract.STORE_KEY      runtime compartido (solo prototipo)
+   Producto independiente: se vende solo, tendrá su propio backend y su
+   propio dominio. No depende de ningún otro sistema para funcionar.
 
-   La planta NO ve datos de obra (identificación de losas, contrato,
-   proyecto): esta pantalla nunca los lee ni los muestra.
+   El contrato (shared/conduce-contract.js) es OPCIONAL — solo sirve para
+   entenderse con un inspector que use QCheck. Si no está, conduce-min.js
+   provee lo mínimo y todo sigue igual.
+
+   Todo el acceso a datos pasa por EtDatos (datos.js): cuando llegue el
+   backend propio se cambia ahí y esta pantalla no se entera.
    ============================================================ */
 "use strict";
 
@@ -65,34 +63,16 @@ function etToggleTheme() {
   localStorage.setItem(THEME_KEY, next); etApplyTheme(next);
 }
 
-/* ------------------------------------------------------------ capa de almacenamiento
-   Trátala como si fuera una API remota: leer estado, escribir origen.
-   Nada más. Hoy es localStorage porque la demo corre en una máquina. */
-function etReadStore() {
-  try {
-    const raw = localStorage.getItem(C.STORE_KEY);
-    if (raw) { const s = JSON.parse(raw); if (s && Array.isArray(s.tests)) return s; }
-  } catch (e) { console.error("e-Ticket: base local ilegible", e); }
-  return null;
-}
-function etConduces() { const s = etReadStore(); return s ? s.tests : []; }
-
-/* Añade el record de origen.
-   El sobre del almacén y la forma del record los resuelve el contrato (v2):
-   ensureStore() arranca la base si el navegador está virgen y newRecord()
-   es la fábrica única — así ambos productos crean exactamente la misma forma
-   y la numeración nunca diverge. */
-function etAppendRecord(origin) {
-  const s = C.ensureStore();
-  if (!Array.isArray(s.tests)) s.tests = [];
-  const rec = C.newRecord({ ...origin, source: "eticket" }, s.tests);
-  s.tests.push(rec);
-  localStorage.setItem(C.STORE_KEY, JSON.stringify(s));
-  return rec;
-}
+/* ------------------------------------------------------------ datos
+   Todo el acceso al almacenamiento pasa por EtDatos (datos.js).
+   Esta pantalla no sabe si detrás hay localStorage o una API. */
+function etConduces() { return EtDatos.conduces(); }
+function etReadStore() { return EtDatos.existe() ? {} : null; }
 
 /* ------------------------------------------------------------ estado del conduce
-   Se LEE lo que QCheck devolvió; no se recalcula ningún veredicto. */
+   Enriquecimiento de obra (llegada, pruebas, veredicto). Hoy solo llega si
+   hay integración; cuando exista el backend entrará por API. Nunca se calcula
+   aquí: e-Ticket lee lo que le devuelvan. */
 const RESULT_FIELDS = ["slump", "air", "uw", "temp", "cs1", "cs5", "cs28"];
 function etStatus(t) {
   if (t.rejected === true) return { k: "rej", label: "Rechazado" };
@@ -132,6 +112,10 @@ function etResetForm() {
   etFillSelects();
   $("f-vol").value = "10";
   $("f-truck").value = "";
+  $("f-extra").value = "";
+  $("f-extra-label").value = "";
+  /* los cargos solo tienen sentido si la planta configuró facturación */
+  $("extra-row").hidden = !etBillingReady(cfg);
   etNow();
   etSuggestTicket();
   $("f-truck").focus();
@@ -149,8 +133,7 @@ function etGenerate() {
   if (!truck) { toast("Falta el número de camión", true); $("f-truck").focus(); return; }
   if (!vol || vol <= 0) { toast("Volumen inválido", true); $("f-vol").focus(); return; }
 
-  const key = C.keyOf(company, ticket);
-  if (etConduces().some((t) => C.keyOf(t.company, t.ticket) === key)) {
+  if (EtDatos.existeConduce(company, ticket)) {
     toast(`El conduce ${ticket} de ${company} ya existe`, true);
     return;
   }
@@ -158,10 +141,11 @@ function etGenerate() {
   const origin = {
     ticket, company, plant: plant || null, truck,
     vol, mix: val("f-mix") || null, batch: val("f-batch") || nowHM(),
+    extra: num(val("f-extra")), extraLabel: val("f-extra-label") || null,
   };
 
   let rec;
-  try { rec = etAppendRecord(origin); }
+  try { rec = EtDatos.crear(origin); }
   catch (e) { console.error(e); toast("No se pudo guardar el conduce", true); return; }
 
   etAdvanceCounter(ticket);
@@ -169,6 +153,8 @@ function etGenerate() {
   etRender();
   toast(`Conduce ${ticket} generado`);
   $("f-truck").value = "";
+  $("f-extra").value = "";
+  $("f-extra-label").value = "";
   etSuggestTicket();
   etNow();
 }
@@ -196,11 +182,29 @@ const SLIP_LOGO = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
   <rect x="60" y="52" width="13" height="13" fill="#111"/><rect x="79" y="73" width="13" height="13" fill="#111"/>
 </svg>`;
 
-function etSlipHTML(t) {
-  const payload = C.encodeQR({
+/* URL que va dentro del QR.
+   El contrato produce la URL con el resumen del conduce en el fragmento (#).
+   e-Ticket le añade lo suyo: fecha y tarifas, para que la página del cliente
+   pueda armar la factura sin conocer la configuración de la planta.
+   El fragmento nunca viaja al servidor. */
+function etQRUrl(t) {
+  let url = C.encodeQR({
     ticket: t.ticket, company: t.company, plant: t.plant,
     truck: t.truck, vol: t.vol, mix: t.mix, batch: t.batch,
-  });
+  }, cfg.publicUrl);
+  const b = etBilling(cfg);
+  const add = [];
+  if (t.date) add.push("dt=" + encodeURIComponent(t.date));
+  if (b.price) add.push("pr=" + b.price);
+  if (b.tripFee) add.push("tf=" + b.tripFee);
+  if (b.taxPct) add.push("tx=" + b.taxPct);
+  if (t.extra) add.push("ex=" + t.extra);
+  if (t.extraLabel) add.push("xl=" + encodeURIComponent(t.extraLabel));
+  return add.length ? url + "&" + add.join("&") : url;
+}
+
+function etSlipHTML(t) {
+  const payload = etQRUrl(t);
   const row = (k, v) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`;
   return `
 <div class="slip" id="slip">
@@ -228,13 +232,15 @@ function etSlipHTML(t) {
 
   <div class="qrbox">
     ${etQRSVG(payload)}
-    <div class="qrcap">Escanee al llegar a la obra</div>
+    <div class="qrcap">${cfg.publicUrl ? "Escanee para ver y pagar" : "Escanee al recibir"}</div>
   </div>
 
   <div class="cut"></div>
   <div class="foot">
-    Entregue este ticket al inspector de calidad.<br>
-    El código QR identifica este conduce: ${esc(C.keyOf(t.company, t.ticket))}
+    ${cfg.publicUrl
+      ? `Escanee el código con la cámara de su teléfono para ver el detalle de esta entrega y pagar.`
+      : `Entregue este ticket al recibir el hormigón.`}<br>
+    Conduce ${esc(C.keyOf(t.company, t.ticket))}
   </div>
 </div>`;
 }
@@ -244,7 +250,7 @@ function etShowSlip(t) {
 }
 function etCloseSlip() { $("slip-sheet").classList.remove("show"); }
 function etReprint(key) {
-  const t = etConduces().find((x) => C.keyOf(x.company, x.ticket) === key);
+  const t = EtDatos.buscarPorLlave(key);
   if (t) etShowSlip(t);
 }
 
@@ -333,7 +339,7 @@ function etInit() {
   });
   /* otra ventana (QCheck) escribió: refrescar estados en vivo */
   window.addEventListener("storage", (e) => {
-    if (e.key === C.STORE_KEY) { if ($("warn")) $("warn").hidden = true; etRender(); }
+    if (EtDatos.esNuestraClave(e.key)) { if ($("warn")) $("warn").hidden = true; etRender(); }
     if (e.key === THEME_KEY && e.newValue) etApplyTheme(e.newValue);
   });
 }

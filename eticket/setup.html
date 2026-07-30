@@ -71,6 +71,43 @@
     </div>
   </section>
 
+  <!-- ---------- página pública del cliente ---------- -->
+  <section class="card">
+    <h2 class="ctitle">Página pública del conduce</h2>
+    <p class="note">
+      Dirección donde queda publicada la página que <b>el cliente abre al escanear el QR</b>
+      desde su teléfono: ve su conduce y paga su factura. Si la deja en blanco el QR sigue
+      sirviendo para importar el conduce, pero <b>no habrá página que abrir</b>.
+    </p>
+    <div class="f" style="max-width:560px">
+      <label for="s-url">URL pública base</label>
+      <input id="s-url" autocomplete="off" placeholder="ej. https://conduce.suempresa.com">
+    </div>
+  </section>
+
+  <!-- ---------- facturación ---------- -->
+  <section class="card">
+    <h2 class="ctitle">Facturación</h2>
+    <p class="note">
+      Tarifas para la factura que ve el cliente en su teléfono. Viajan dentro del código QR,
+      porque el teléfono del cliente no conoce esta configuración.
+    </p>
+    <div class="fgrid" style="max-width:720px">
+      <div class="f">
+        <label for="s-price">Precio por CY ($)</label>
+        <input id="s-price" inputmode="decimal" placeholder="ej. 145.00">
+      </div>
+      <div class="f">
+        <label for="s-trip">Cargo por viaje ($)</label>
+        <input id="s-trip" inputmode="decimal" placeholder="ej. 75.00">
+      </div>
+      <div class="f">
+        <label for="s-tax">Impuesto (%)</label>
+        <input id="s-tax" inputmode="decimal" placeholder="ej. 11.5">
+      </div>
+    </div>
+  </section>
+
   <!-- ---------- papel ---------- -->
   <section class="card">
     <h2 class="ctitle">Papel del ticket</h2>

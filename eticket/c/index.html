@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Su entrega de hormigón</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230b0e13'/><rect x='26' y='26' width='30' height='30' rx='6' fill='none' stroke='%23ff9f43' stroke-width='9'/><rect x='64' y='64' width='12' height='12' fill='%23ff9f43'/></svg>">
+<link rel="stylesheet" href="cliente.css">
+</head>
+<body>
+
+<!-- Estado de demostración: siempre visible, nunca debe parecer un cobro real -->
+<div class="demo" id="demo-banner">
+  Demostración — no se procesa ningún cobro
+</div>
+
+<main id="app" hidden>
+
+  <header class="top">
+    <div class="co" id="co">—</div>
+    <div class="lead">Detalle de su entrega</div>
+  </header>
+
+  <section class="card hero">
+    <div class="k">Conduce</div>
+    <div class="tk" id="tk">—</div>
+    <div class="when" id="when">—</div>
+  </section>
+
+  <section class="card">
+    <h2>Lo que recibió</h2>
+    <dl class="rows" id="detalle"></dl>
+  </section>
+
+  <section class="card" id="factura-card">
+    <h2>Su factura</h2>
+    <div class="inv" id="factura"></div>
+    <div class="total">
+      <span>Total a pagar</span>
+      <b id="total">—</b>
+    </div>
+    <h3 class="paylbl">Escoja cómo pagar</h3>
+    <div class="methods" id="methods"></div>
+    <p class="fine">
+      El pago se completa en la página segura del proveedor que escoja.
+      Esta página nunca le pide el número de su tarjeta ni las claves de su cuenta.
+    </p>
+  </section>
+
+  <section class="card" id="correo-card">
+    <h2>Recibir por correo</h2>
+    <p class="muted">Le enviamos el conduce y la factura listos para imprimir.</p>
+    <div class="mailrow">
+      <input id="email" type="email" inputmode="email" autocomplete="email"
+             placeholder="su@correo.com" aria-label="Su correo electrónico">
+      <button class="send" onclick="alEnviarCorreo()">Enviar</button>
+    </div>
+    <button class="ghost" onclick="window.print()">Descargar o imprimir</button>
+  </section>
+
+  <footer class="foot">
+    <span id="foot-co">—</span>
+    <s>Conduce <span id="foot-key">—</span></s>
+  </footer>
+
+</main>
+
+<!-- estado de error: enlace incompleto -->
+<section class="card oops" id="oops" hidden>
+  <h2>No pudimos leer este conduce</h2>
+  <p class="muted">
+    El enlace parece incompleto. Vuelva a escanear el código del ticket que le
+    entregó el chofer, o comuníquese con la compañía que le hizo la entrega.
+  </p>
+</section>
+
+<!-- aviso modal (pago / correo) -->
+<div class="sheet" id="sheet" hidden>
+  <div class="sbox">
+    <h3 id="sheet-title">—</h3>
+    <p id="sheet-body">—</p>
+    <button class="pay" onclick="cerrarAviso()">Entendido</button>
+  </div>
+</div>
+
+<!-- hoja imprimible: conduce + factura -->
+<div id="print-doc"></div>
+
+<script src="cliente.js"></script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+/* ============================================================
+   Página pública del conduce — la ve un CLIENTE PARTICULAR en su
+   teléfono, no un operador de planta. Móvil primero, sin jerga,
+   sin datos internos. Autónoma: no depende de nada del resto de
+   e-Ticket, porque el teléfono del cliente solo carga esto.
+   ============================================================ */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --ink: #14202b;
+  --muted: #6b7885;
+  --line: rgba(15,30,45,.11);
+  --brand: #e07b12;
+  --brand-ink: #ffffff;
+  --ok: #0e9d55;
+  --shadow: rgba(15,30,45,.10);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0e13; --surface: #151a22; --ink: #eef2f6; --muted: #8b96a3;
+    --line: rgba(255,255,255,.10); --brand: #ff9f43; --brand-ink: #2a1600;
+    --ok: #34d27b; --shadow: rgba(0,0,0,.45);
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+/* `hidden` tiene que ganarle a cualquier display de más abajo (.sheet usa flex) */
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5; padding-bottom: 40px;
+}
+
+/* aviso de demostración — no se esconde nunca */
+.demo {
+  background: #2c2c2c; color: #ffd48a; text-align: center;
+  font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  padding: 10px 14px; position: sticky; top: 0; z-index: 40;
+}
+
+main { max-width: 560px; margin: 0 auto; padding: 20px 16px 0; }
+
+.top { padding: 12px 4px 20px; }
+.top .co { font-size: 25px; font-weight: 800; letter-spacing: -.01em; line-height: 1.15; }
+.top .lead { font-size: 14px; color: var(--muted); margin-top: 3px; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+  padding: 20px; margin-bottom: 14px; box-shadow: 0 6px 22px -18px var(--shadow);
+}
+.card h2 { font-size: 12px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+.hero { text-align: center; padding: 24px 20px; }
+.hero .k { font-size: 11px; font-weight: 800; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
+.hero .tk { font-size: 52px; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; margin: 4px 0 6px; }
+.hero .when { font-size: 14px; color: var(--muted); }
+
+/* detalle de la entrega */
+.rows { display: block; }
+.rows .r { display: flex; align-items: baseline; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.rows .r:last-child { border-bottom: none; }
+.rows dt { font-size: 14px; color: var(--muted); flex: 1; }
+.rows dd { font-size: 17px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.rows dd s { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-decoration: none; margin-top: 1px; }
+
+/* factura */
+.inv .li { display: flex; align-items: baseline; gap: 14px; padding: 10px 0; }
+.inv .li .d { flex: 1; font-size: 15px; }
+.inv .li .d s { display: block; font-size: 12px; color: var(--muted); text-decoration: none; }
+.inv .li .a { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.inv .sep { border-top: 1px solid var(--line); margin: 8px 0; }
+.inv .li.sub .d, .inv .li.sub .a { color: var(--muted); font-size: 14px; font-weight: 700; }
+.total {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+  border-top: 2px solid var(--ink); margin-top: 10px; padding-top: 14px;
+}
+.total span { font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.total b { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* botones grandes: se usan con una mano, de pie, en el patio de una casa */
+.pay, .send, .ghost {
+  font-family: inherit; cursor: pointer; border-radius: 14px; border: none;
+  font-weight: 800; letter-spacing: .04em;
+}
+.pay {
+  display: block; width: 100%; margin-top: 18px; padding: 19px;
+  background: var(--brand); color: var(--brand-ink); font-size: 18px;
+}
+.pay:active { transform: scale(.99); }
+.ghost {
+  display: block; width: 100%; margin-top: 10px; padding: 16px;
+  background: transparent; color: var(--muted); border: 2px solid var(--line); font-size: 14px;
+}
+/* métodos de pago
+   Iconografía PROPIA y sobria a propósito: no se replican los logotipos
+   oficiales de PayPal, Apple Pay ni ATH Móvil. Cada marca tiene guías de
+   uso y recursos autorizados que hay que usar en producción. */
+.paylbl { font-size: 12px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin: 20px 0 12px; }
+.methods { display: flex; flex-direction: column; gap: 10px; }
+.method {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  background: var(--bg); border: 2px solid var(--line); border-radius: 14px;
+  padding: 16px 16px; cursor: pointer; font-family: inherit; color: var(--ink); text-align: left;
+}
+.method:active { border-color: var(--brand); }
+.method .ico {
+  width: 42px; height: 42px; border-radius: 11px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--line);
+}
+.method .ico svg { width: 22px; height: 22px; }
+.method .nm { flex: 1; min-width: 0; }
+.method .nm b { display: block; font-size: 16px; font-weight: 800; }
+.method .nm s { display: block; font-size: 12px; color: var(--muted); text-decoration: none; margin-top: 1px; }
+.method .go { color: var(--muted); font-size: 20px; flex: none; }
+
+.fine { font-size: 12px; color: var(--muted); margin-top: 14px; line-height: 1.5; }
+.muted { font-size: 14px; color: var(--muted); margin-bottom: 14px; }
+
+.mailrow { display: flex; gap: 10px; }
+.mailrow input {
+  flex: 1; min-width: 0; background: var(--bg); border: 2px solid var(--line); color: var(--ink);
+  border-radius: 14px; padding: 15px 14px; font-size: 16px; font-family: inherit;
+}
+.mailrow input:focus { outline: none; border-color: var(--brand); }
+.send { padding: 15px 20px; background: var(--ink); color: var(--surface); font-size: 14px; }
+
+.foot { text-align: center; color: var(--muted); font-size: 12px; padding: 24px 16px 8px; }
+.foot s { display: block; text-decoration: none; margin-top: 3px; }
+
+.oops { max-width: 560px; margin: 26px auto; }
+.oops h2 { color: var(--ink); font-size: 19px; letter-spacing: 0; text-transform: none; }
+
+/* aviso modal */
+.sheet {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end;
+  justify-content: center; background: rgba(8,12,18,.6); padding: 16px;
+}
+.sbox {
+  background: var(--surface); border-radius: 20px; padding: 26px 22px 22px;
+  width: 100%; max-width: 480px;
+}
+.sbox h3 { font-size: 20px; margin-bottom: 10px; }
+.sbox p { font-size: 15px; color: var(--muted); line-height: 1.6; }
+@media (min-width: 560px) { .sheet { align-items: center; } }
+
+/* ---------- impresión: conduce + factura, nada de la interfaz ---------- */
+#print-doc { display: none; }
+@page { margin: 14mm; }
+@media print {
+  body { background: #fff; color: #000; padding: 0; }
+  body > *:not(#print-doc) { display: none !important; }
+  #print-doc { display: block; font-size: 11pt; }
+  #print-doc .ph { display: flex; justify-content: space-between; align-items: flex-start;
+                   border-bottom: 2px solid #000; padding-bottom: 4mm; margin-bottom: 5mm; }
+  #print-doc .ph .n { font-size: 17pt; font-weight: 800; }
+  #print-doc .ph .t { text-align: right; font-size: 9pt; }
+  #print-doc .ph .t b { display: block; font-size: 20pt; font-variant-numeric: tabular-nums; }
+  #print-doc h4 { font-size: 8.5pt; letter-spacing: .16em; text-transform: uppercase;
+                  color: #555; margin: 6mm 0 2mm; }
+  #print-doc table { width: 100%; border-collapse: collapse; }
+  #print-doc td { padding: 1.8mm 0; border-bottom: 1px dotted #bbb; font-size: 10.5pt; }
+  #print-doc td.a { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #print-doc tr.tot td { border-top: 2px solid #000; border-bottom: none;
+                         font-size: 14pt; font-weight: 800; padding-top: 3mm; }
+  #print-doc .note { margin-top: 8mm; font-size: 8.5pt; color: #555; line-height: 1.5; }
+}

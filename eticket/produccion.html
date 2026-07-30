@@ -63,8 +63,12 @@
 
 <div id="toast"></div>
 
-<script src="../shared/conduce-contract.js"></script>
+<!-- El contrato es OPCIONAL: si falta, conduce-min.js provee lo mínimo
+     y e-Ticket sigue funcionando completo (solo se pierde el traspaso a QCheck). -->
+<script src="../shared/conduce-contract.js" onerror="console.info('e-Ticket: sin contrato de interoperabilidad — modo autónomo')"></script>
+<script src="conduce-min.js"></script>
 <script src="config.js"></script>
+<script src="datos.js"></script>
 <script src="produccion.js"></script>
 </body>
 </html>

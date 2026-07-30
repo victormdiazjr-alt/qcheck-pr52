@@ -1,20 +1,32 @@
 /* ============================================================
-   CONTRATO DEL CONDUCE — v1
-   El único punto de contacto entre las dos herramientas:
-     · e-Ticket (concretera)  — crea el conduce
-     · QCheck   (Segarra QC)  — lo enriquece
-   Son productos independientes, para clientes distintos.
-   NO comparten código de producto: comparten SOLO este contrato.
-   Cambiar este archivo es cambiar la integración: súbele la versión
-   y avisa a ambos lados.
+   CONTRATO DEL CONDUCE — capa de INTEROPERABILIDAD (opcional)
+
+   e-Ticket (concretera) y QCheck (Segarra QC) son **productos
+   independientes**. Ninguno necesita al otro para funcionar:
+
+     · e-Ticket vende solo. Su cliente puede no tener nada que ver
+       con Segarra: venta residencial, obra privada, otro inspector.
+     · QCheck opera solo. La mayoría de las concreteras que inspecciona
+       NO tendrán e-Ticket ni códigos QR: llegan con conduce en papel.
+
+   Este archivo NO es una dependencia: es el idioma común PARA CUANDO
+   ambos coinciden en la misma obra. Si falta, cada herramienta sigue
+   funcionando completa — solo se pierde el traspaso automático.
+
+   Regla: ninguna herramienta puede requerir este archivo para arrancar.
    ============================================================ */
 "use strict";
 
-const CONDUCE_CONTRACT_VERSION = 3;
-/* v2 — añade la contabilidad del record y el arranque del almacén, que en v1
-        quedaban sin dueño y cada lado resolvía por su cuenta.
-   v3 — publicación de límites de especificación: QC los PUBLICA, la planta
-        los LEE. Una sola fuente de verdad para un número de cumplimiento. */
+const CONDUCE_CONTRACT_VERSION = 4;
+/* v2 — contabilidad del record y arranque del almacén.
+   v3 — límites de especificación: QC los PUBLICA, la planta los LEE.
+   v4 — INDEPENDENCIA: cada herramienta tiene su propio almacén; el QR pasa a
+        ser una URL pública que sirve a los dos usos (cliente residencial que
+        paga desde su teléfono, y QCheck que importa el conduce sin señal). */
+
+/* Cada producto es dueño de su propia base. El contrato NO impone una común. */
+const ETICKET_STORE_KEY = "eticket-db-v1";   // conduces de la concretera
+const QCHECK_STORE_KEY  = "qc-pr52-db-v1";   // pruebas y control de QC
 
 /* ------------------------------------------------------------
    1. Identidad del conduce
@@ -69,14 +81,15 @@ function newConduceRecord(origin, tests) {
    puede llegar primero a un navegador virgen, así que el sobre
    mínimo lo crea ESTE contrato — nunca cada herramienta a su modo.
 ------------------------------------------------------------ */
-function ensureConduceStore() {
+function ensureConduceStore(storeKey) {
+  const key = storeKey || CONDUCE_STORE_KEY;
   try {
-    const raw = localStorage.getItem(CONDUCE_STORE_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) return JSON.parse(raw);
   } catch (_) {}
   const empty = { version: 2, contract: CONDUCE_CONTRACT_VERSION,
                   project: {}, plan: {}, tests: [], dayMeta: {}, humidity: [] };
-  localStorage.setItem(CONDUCE_STORE_KEY, JSON.stringify(empty));
+  localStorage.setItem(key, JSON.stringify(empty));
   return empty;
 }
 
@@ -163,24 +176,54 @@ function zoneAgainstSpec(spec, field, value) {
    identificador + un resumen mínimo del origen para que QCheck
    opere sin señal y sincronice después.
 ------------------------------------------------------------ */
-function encodeConduceQR(o) {
-  return JSON.stringify({
-    v: CONDUCE_CONTRACT_VERSION,
+/* Un QR, dos públicos:
+
+   · El CLIENTE RESIDENCIAL apunta la cámara del teléfono, se le abre la
+     página del conduce y paga su factura ahí mismo. Por eso es una URL.
+   · QCheck lee esa misma URL y saca los datos del fragmento (#), sin
+     conexión y sin abrir nada. Por eso el fragmento carga el resumen.
+
+   El fragmento nunca viaja al servidor: los datos del conduce no quedan
+   en registros de acceso ni en el historial del proveedor.               */
+function encodeConduceQR(o, baseUrl) {
+  const q = new URLSearchParams({
+    v: String(CONDUCE_CONTRACT_VERSION),
     k: conduceKeyOf(o.company, o.ticket),
-    ticket: o.ticket, company: o.company, plant: o.plant,
-    truck: o.truck, vol: o.vol, mix: o.mix, batch: o.batch,
+    tk: o.ticket == null ? "" : String(o.ticket),
+    co: o.company || "", pl: o.plant || "", tr: o.truck || "",
+    cy: o.vol == null ? "" : String(o.vol), mx: o.mix || "", bt: o.batch || "",
   });
+  const base = (baseUrl || "").replace(/[#?].*$/, "").replace(/\/$/, "");
+  return base ? `${base}/#${q}` : `#${q}`;   // sin URL configurada: solo el fragmento
 }
 
-/* Acepta el JSON de arriba o el respaldo delimitado:
-   ticket;camion;cy;horaBatch;compañía;planta                      */
+/* Acepta la URL de arriba, el JSON de v1–v3, o el respaldo delimitado
+   `ticket;camion;cy;horaBatch;compañía;planta` (conduces de otros sistemas). */
 function decodeConduceQR(raw) {
   if (!raw) return null;
+  const s = String(raw).trim();
+
+  // 1) URL o fragmento suelto — formato v4
+  const hash = s.indexOf("#");
+  if (hash !== -1) {
+    const q = new URLSearchParams(s.slice(hash + 1));
+    if (q.get("tk")) return {
+      v: Number(q.get("v")) || CONDUCE_CONTRACT_VERSION,
+      ticket: q.get("tk"), company: q.get("co") || null, plant: q.get("pl") || null,
+      truck: q.get("tr") || null, vol: q.get("cy") ? Number(q.get("cy")) : null,
+      mix: q.get("mx") || null, batch: q.get("bt") || null,
+      url: hash > 0 ? s : null, _format: "url",
+    };
+  }
+
+  // 2) JSON — contratos v1 a v3
   try {
-    const d = JSON.parse(raw);
+    const d = JSON.parse(s);
     if (d && d.ticket) return { ...d, _format: "json" };
   } catch (_) {}
-  const p = String(raw).split(/[;|,]/).map((s) => s.trim());
+
+  // 3) Delimitado — conduces de sistemas ajenos
+  const p = s.split(/[;|,]/).map((x) => x.trim());
   if (!p[0]) return null;
   return {
     v: CONDUCE_CONTRACT_VERSION,
@@ -212,6 +255,7 @@ if (typeof window !== "undefined") {
     mixCodeOf, publishMixSpec, readMixSpec, zoneAgainstSpec,
     encodeQR: encodeConduceQR,
     decodeQR: decodeConduceQR,
-    STORE_KEY: CONDUCE_STORE_KEY,
+    STORE_KEY: CONDUCE_STORE_KEY,          // heredado (compatibilidad)
+    ETICKET_STORE_KEY, QCHECK_STORE_KEY,
   };
 }

@@ -401,6 +401,7 @@ function viewCharts() {
     <div class="toolbar">
       <h2>Cartas de control</h2>
       ${rangeSel}
+      <a class="btn primary" href="reporte.html">📄 Generar reporte</a>
       <div class="spacer"></div>
       <div class="chart-legend">
         <span><span class="sw" style="background:var(--chart-ok)"></span>OK</span>

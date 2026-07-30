@@ -76,6 +76,14 @@
         </div>
       </div>
 
+      <div class="f wide" id="extra-row" hidden>
+        <label>Cargos adicionales de este conduce (opcional)</label>
+        <div class="stepper">
+          <input id="f-extra-label" autocomplete="off" placeholder="concepto — ej. espera en sitio" style="flex:2">
+          <input id="f-extra" inputmode="decimal" placeholder="$ 0.00" style="flex:1">
+        </div>
+      </div>
+
       <div class="f">
         <label for="f-batch">Hora de cargado</label>
         <div class="stepper">
@@ -126,8 +134,12 @@
 
 <div id="toast"></div>
 
-<script src="../shared/conduce-contract.js"></script>
+<!-- El contrato es OPCIONAL: si falta, conduce-min.js provee lo mínimo
+     y e-Ticket sigue funcionando completo (solo se pierde el traspaso a QCheck). -->
+<script src="../shared/conduce-contract.js" onerror="console.info('e-Ticket: sin contrato de interoperabilidad — modo autónomo')"></script>
+<script src="conduce-min.js"></script>
 <script src="config.js"></script>
+<script src="datos.js"></script>
 <script src="qr.js"></script>
 <script src="eticket.js"></script>
 </body>

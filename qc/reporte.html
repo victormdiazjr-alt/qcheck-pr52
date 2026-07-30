@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporte de Control de Calidad — QCheck</title>
+<link rel="stylesheet" href="qc.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%232b3a8c'/><text x='50' y='70' font-size='52' text-anchor='middle' fill='white'>▤</text></svg>">
+<style>
+/* ============================================================
+   REPORTE — el paquete que Rubén entrega.
+   Reemplaza el armado manual desde Excel: tabla matriz,
+   media móvil y cartas de control, listo para imprimir.
+   ============================================================ */
+.rep-toolbar { position: sticky; top: 0; z-index: 40; background: var(--bg); padding: 12px 0; }
+.rep-toolbar .field { display: inline-block; margin-right: 12px; }
+.rep-toolbar label { display: block; font-size: 10.5px; }
+
+/* hoja */
+.sheet {
+  background: #fff; color: #16222e;
+  max-width: 8.5in; margin: 0 auto 22px;
+  padding: 0.7in 0.75in 0.6in;
+  box-shadow: 0 4px 22px rgba(10,25,40,.16);
+  border-radius: 4px;
+  font-size: 10.5pt; line-height: 1.45;
+}
+:root[data-theme="dark"] .sheet { box-shadow: 0 4px 22px rgba(0,0,0,.5); }
+
+/* encabezado de hoja */
+.sh-head { display: flex; align-items: flex-start; gap: 14px; border-bottom: 2px solid #2b3a8c; padding-bottom: 10px; margin-bottom: 16px; }
+.sh-head .logo { height: 40px; flex: none; }
+.sh-head .t1 { font-size: 15pt; font-weight: 800; color: #16222e; line-height: 1.15; }
+.sh-head .t2 { font-size: 9pt; color: #5a6b7c; margin-top: 2px; }
+.sh-head .right { margin-left: auto; text-align: right; font-size: 8.5pt; color: #5a6b7c; line-height: 1.5; }
+.sh-head .right b { color: #16222e; }
+
+h2.sec { font-size: 12pt; margin: 20px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #dbe2e9; color: #2b3a8c; }
+h2.sec:first-of-type { margin-top: 4px; }
+
+/* ficha del proyecto */
+.meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 18px; font-size: 9.5pt; }
+.meta .k { color: #5a6b7c; font-size: 8pt; text-transform: uppercase; letter-spacing: .4px; font-weight: 700; }
+.meta .v { font-weight: 600; }
+
+/* resumen */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 10px 0 4px; }
+.kpi { border: 1px solid #dbe2e9; border-radius: 6px; padding: 9px 11px; }
+.kpi .k { font-size: 7.5pt; color: #5a6b7c; text-transform: uppercase; letter-spacing: .5px; font-weight: 800; }
+.kpi .v { font-size: 17pt; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.kpi .s { font-size: 8pt; color: #5a6b7c; }
+.kpi.ok .v { color: #1e8e3e; } .kpi.bad .v { color: #c5221f; }
+
+/* tabla matriz */
+table.rep { width: 100%; border-collapse: collapse; font-size: 7.6pt; }
+table.rep th {
+  background: #eef2f7; color: #2b3a8c; text-align: left; font-size: 6.8pt;
+  text-transform: uppercase; letter-spacing: .3px; padding: 4px 3px;
+  border: .5px solid #c8d2dd; white-space: nowrap;
+}
+table.rep td { padding: 3px; border: .5px solid #dbe2e9; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.rep td.n { text-align: right; }
+table.rep td.wrap { white-space: normal; min-width: 90px; }
+table.rep tr.rej td { background: #fdeceb; color: #8a2725; }
+table.rep td.z-act { background: #fdf5e2; font-weight: 700; }
+table.rep td.z-susp { background: #fbe4e2; font-weight: 700; color: #a01c19; }
+.tbl-note { font-size: 7.5pt; color: #5a6b7c; margin-top: 5px; }
+
+/* cartas */
+.chart-box { border: 1px solid #dbe2e9; border-radius: 5px; padding: 8px 10px 2px; margin-bottom: 12px; }
+.chart-box h3 { font-size: 9.5pt; margin-bottom: 2px; }
+.chart-box .lim { font-size: 7.5pt; color: #5a6b7c; margin-bottom: 4px; }
+.chart-box svg { max-width: 100%; height: auto; }
+
+/* firmas */
+.signs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; margin-top: 34px; }
+.sign { border-top: 1px solid #16222e; padding-top: 5px; font-size: 8.5pt; }
+.sign .r { color: #5a6b7c; }
+.sh-foot { margin-top: 18px; border-top: 1px solid #dbe2e9; padding-top: 6px; font-size: 7.5pt; color: #5a6b7c; display: flex; }
+.sh-foot .pg { margin-left: auto; }
+
+@media print {
+  body { background: #fff; }
+  .qc-header, .rep-toolbar, .no-print { display: none !important; }
+  main { max-width: none; padding: 0; margin: 0; }
+  .sheet { box-shadow: none; margin: 0; border-radius: 0; max-width: none; padding: 0.5in 0.55in;
+           break-after: page; page-break-after: always; }
+  .sheet:last-child { break-after: auto; page-break-after: auto; }
+  .chart-box, table.rep tr { break-inside: avoid; page-break-inside: avoid; }
+  @page { size: Letter portrait; margin: 0.35in; }
+}
+</style>
+</head>
+<body>
+
+<header class="qc-header no-print">
+  <div class="brand">
+    <a href="portal.html" style="text-decoration:none">
+      <svg style="height:34px;width:34px;display:block" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 69.7 93.6 A 40 40 0 1 1 95.85 59.49" fill="none" stroke="#7fa0ff" stroke-width="15"/>
+        <polyline points="62,64 86,82 114,46" fill="none" stroke="#96c93d" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+    <div>
+      <div class="title">Reporte de Control de Calidad</div>
+      <div class="subtitle">Tabla matriz · media móvil · cartas de control</div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <a class="btn small" style="margin:10px 0" href="index.html">← Control Center</a>
+  </nav>
+</header>
+
+<main>
+  <div class="rep-toolbar no-print" id="toolbar"></div>
+  <div id="report"></div>
+</main>
+
+<div id="modal-root"></div>
+<div id="toast"></div>
+
+<script src="../shared/conduce-contract.js"></script>
+<script src="seed.js"></script>
+<script src="core.js"></script>
+<script>
+"use strict";
+
+const state = { from: null, to: null, lot: "all" };
+
+/* ---------- selección ---------- */
+function rangeTests() {
+  return sortedTests().filter((t) => {
+    if (state.from && t.date < state.from) return false;
+    if (state.to && t.date > state.to) return false;
+    if (state.lot !== "all" && String(t.lot) !== state.lot) return false;
+    return true;
+  });
+}
+
+/* Media móvil recalculada SOLO sobre lo incluido en el reporte */
+function maRows(rows) {
+  const w = db.plan.maWindow;
+  const sets = rows.filter((t) => t.cs5 != null);
+  const acc = [];
+  return sets.map((s) => {
+    acc.push(s.cs5);
+    return { ...s, ma: acc.length >= w ? acc.slice(-w).reduce((a, b) => a + b, 0) / w : null };
+  });
+}
+
+/* Carta de control dibujada solo con los ensayos del reporte */
+function repChart(def, rows) {
+  const pts = rows.filter((t) => def.get(t) != null).map((t) => ({
+    n: t.n, date: t.date, ticket: t.ticket, v: def.get(t), rejected: t.rejected,
+    z: def.key === "slump" ? zoneSlump(t) : def.key === "air" ? zoneAir(t)
+      : def.key === "uw" ? zoneUW(t) : zoneTemp(t),
+  }));
+  const pw = pts.length > 90 ? 7 : pts.length > 45 ? 11 : 16;
+  return svgChart({ pts, bands: bandsFor(def.key), dp: def.dp, pw, h: 190 });
+}
+
+function sheetHead(titulo, pag, total) {
+  const pr = db.project;
+  return `<div class="sh-head">
+    <svg class="logo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 69.7 93.6 A 40 40 0 1 1 95.85 59.49" fill="none" stroke="#2b3a8c" stroke-width="15"/>
+      <polyline points="62,64 86,82 114,46" fill="none" stroke="#96c93d" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="t1">${esc(titulo)}</div>
+      <div class="t2">${esc(pr.name || "")}</div>
+    </div>
+    <div class="right">
+      <b>${esc(pr.qcFirm || "")}</b><br>
+      ${esc(pr.mixId || "")}<br>
+      Emitido ${fmtDate(todayISO())}
+    </div>
+  </div>`;
+}
+function sheetFoot(pag, total) {
+  return `<div class="sh-foot">
+    <span>${esc(db.project.name || "")} · ${esc(db.project.qcFirm || "")}</span>
+    <span class="pg">Página ${pag} de ${total}</span>
+  </div>`;
+}
+
+/* ---------- render ---------- */
+function render() {
+  const days = testDates().slice().sort();
+  if (!state.from) state.from = days[0];
+  if (!state.to) state.to = days[days.length - 1];
+  const lots = [...new Set(db.tests.map((t) => t.lot).filter((x) => x != null))].sort((a, b) => Number(a) - Number(b));
+
+  document.getElementById("toolbar").innerHTML = `
+    <div class="field"><label>Desde</label><input type="date" value="${state.from}" onchange="state.from=this.value; render()"></div>
+    <div class="field"><label>Hasta</label><input type="date" value="${state.to}" onchange="state.to=this.value; render()"></div>
+    <div class="field"><label>Lote</label><select onchange="state.lot=this.value; render()">
+      <option value="all">Todos</option>
+      ${lots.map((l) => `<option value="${l}" ${state.lot === String(l) ? "selected" : ""}>Lote ${l}</option>`).join("")}
+    </select></div>
+    <button class="btn primary" onclick="window.print()">🖨 Imprimir / PDF</button>
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <span class="muted" style="font-size:12.5px; margin-left:8px" id="cnt"></span>`;
+
+  const rows = rangeTests();
+  document.getElementById("cnt").textContent = `${rows.length} ensayos en el reporte`;
+
+  if (!rows.length) {
+    document.getElementById("report").innerHTML =
+      `<div class="sheet"><div class="empty">Sin ensayos en el rango seleccionado.</div></div>`;
+    return;
+  }
+
+  // --- métricas del reporte ---
+  const evaluated = rows.filter((t) => worstZone(t) != null);
+  const conf = evaluated.filter((t) => !t.rejected && worstZone(t) !== "susp").length;
+  const rej = rows.filter((t) => t.rejected);
+  const cy = rows.reduce((a, t) => a + (num(t.vol) || 0), 0);
+  const ma = maRows(rows);
+  const cs5 = ma.filter((s) => s.cs5 != null);
+  const bajo = cs5.filter((s) => s.cs5 < db.plan.cs.target).length;
+  const minMA = ma.filter((s) => s.ma != null).map((s) => s.ma);
+  const p = db.plan;
+
+  // páginas: 1 portada+resumen, N de matriz, 1 media móvil, 2 cartas, 1 rechazos+firmas
+  const PER = 30;
+  const chunks = [];
+  for (let i = 0; i < rows.length; i += PER) chunks.push(rows.slice(i, i + PER));
+  const total = 1 + chunks.length + 1 + 2 + 1;
+  let pg = 0;
+
+  const out = [];
+
+  // ---------- HOJA 1: portada + resumen ----------
+  pg++;
+  out.push(`<div class="sheet">
+    ${sheetHead("Reporte de Control de Calidad", pg, total)}
+    <h2 class="sec">Información del proyecto</h2>
+    <div class="meta">
+      <div><div class="k">Proyecto</div><div class="v">${esc(db.project.name || "—")}</div></div>
+      <div><div class="k">Contratista</div><div class="v">${esc(db.project.contractor || "—")}</div></div>
+      <div><div class="k">Control de calidad</div><div class="v">${esc(db.project.qcFirm || "—")}</div></div>
+      <div><div class="k">Mezcla</div><div class="v">${esc(db.project.mixId || "—")}</div></div>
+      <div><div class="k">Período</div><div class="v">${fmtDate(state.from)} – ${fmtDate(state.to)}</div></div>
+      <div><div class="k">Lote</div><div class="v">${state.lot === "all" ? "Todos" : "Lote " + esc(state.lot)}</div></div>
+    </div>
+
+    <h2 class="sec">Resumen de cumplimiento</h2>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Ensayos</div><div class="v">${rows.length}</div><div class="s">${fmt(cy, 1)} yd³ representadas</div></div>
+      <div class="kpi ${evaluated.length && conf / evaluated.length >= .9 ? "ok" : ""}"><div class="k">Dentro de límites</div>
+        <div class="v">${evaluated.length ? fmt(conf / evaluated.length * 100, 1) : "—"}%</div><div class="s">${conf} de ${evaluated.length} evaluados</div></div>
+      <div class="kpi ${rej.length ? "bad" : "ok"}"><div class="k">Rechazados</div><div class="v">${rej.length}</div>
+        <div class="s">${fmt(rej.reduce((a, t) => a + (num(t.vol) || 0), 0), 1)} yd³</div></div>
+      <div class="kpi ${minMA.length && Math.min(...minMA) >= p.cs.target ? "ok" : "bad"}"><div class="k">Media móvil mínima</div>
+        <div class="v">${minMA.length ? fmt(Math.min(...minMA), 0) : "—"}</div><div class="s">objetivo ${fmt(p.cs.target, 0)} psi</div></div>
+    </div>
+
+    <h2 class="sec">Criterios de aceptación aplicados</h2>
+    <table class="rep">
+      <tr><th>Parámetro</th><th>Objetivo</th><th>Límites de acción</th><th>Límites de suspensión</th></tr>
+      <tr><td>Revenimiento (in)</td><td class="n">${p.slump.target}</td><td class="n">${p.slump.actLo} – ${p.slump.actHi}</td><td class="n">${p.slump.suspLo} – ${p.slump.suspHi}</td></tr>
+      <tr><td>Contenido de aire (%)</td><td class="n">${p.air.target}</td><td class="n">${p.air.actLo} – ${p.air.actHi}</td><td class="n">${p.air.suspLo} – ${p.air.suspHi}</td></tr>
+      <tr><td>Peso unitario (pcf)</td><td class="n">${p.uw.target}</td><td class="n">± ${p.uw.act}</td><td class="n">± ${p.uw.susp}</td></tr>
+      <tr><td>Temperatura (°F)</td><td class="n">—</td><td class="n">&gt; ${p.tempMax - 3}</td><td class="n">&gt; ${p.tempMax}</td></tr>
+      <tr><td>Resistencia @ ${p.cs.age} días (psi)</td><td class="n">${fmt(p.cs.target, 0)}</td><td class="n">&lt; ${fmt(p.cs.target, 0)}</td><td class="n">&lt; ${fmt(p.cs.action, 0)}</td></tr>
+      <tr><td>Apertura al tráfico (psi)</td><td class="n">${fmt(p.cs.openTarget, 0)}</td><td class="n" colspan="2">mínimo ${fmt(p.cs.openLow, 0)}</td></tr>
+    </table>
+    <div class="tbl-note">Ensayos de hormigón fresco según ASTM C143 (revenimiento), C231 (aire), C138 (peso unitario) y C1064 (temperatura).
+      Resistencia a compresión según ASTM C39. Media móvil de ${p.maWindow} ensayos consecutivos.</div>
+    ${sheetFoot(pg, total)}
+  </div>`);
+
+  // ---------- HOJAS 2..N: tabla matriz ----------
+  chunks.forEach((chunk, i) => {
+    pg++;
+    out.push(`<div class="sheet">
+      ${sheetHead("Tabla matriz de ensayos" + (chunks.length > 1 ? ` (${i + 1}/${chunks.length})` : ""), pg, total)}
+      <table class="rep">
+        <tr><th>#</th><th>Fecha</th><th>Conduce</th><th>Camión</th><th class="n">yd³</th><th>Lote</th><th>Identificación</th>
+            <th>Muestra</th><th class="n">Rev.</th><th class="n">Aire</th><th class="n">P.U.</th><th class="n">Temp</th>
+            <th class="n">1 d</th><th class="n">${p.cs.age} d</th><th class="n">28 d</th><th>Estado</th></tr>
+        ${chunk.map((t) => {
+          const z = (zz) => zz ? ` class="n z-${zz}"` : ' class="n"';
+          return `<tr class="${t.rejected ? "rej" : ""}">
+            <td class="n">${t.n}</td><td>${esc(t.date)}</td><td>${esc(t.ticket || "—")}</td><td>${esc(t.truck || "—")}</td>
+            <td class="n">${fmt(num(t.vol), 1)}</td><td class="n">${esc(t.lot ?? "—")}</td>
+            <td class="wrap">${esc(shortIdent(t.ident))}</td><td>${esc(t.testTime || "—")}</td>
+            <td${z(zoneSlump(t))}>${fmt(t.slump, 2)}</td>
+            <td${z(zoneAir(t))}>${fmt(t.air, 1)}</td>
+            <td${z(zoneUW(t))}>${fmt(t.uw, 2)}</td>
+            <td${z(zoneTemp(t))}>${fmt(t.temp, 0)}</td>
+            <td class="n">${fmt(t.cs1, 0)}</td><td${z(zoneCS5(t.cs5))}>${fmt(t.cs5, 0)}</td><td class="n">${fmt(t.cs28, 0)}</td>
+            <td>${t.rejected ? "RECHAZADO" : (worstZone(t) === "susp" ? "Fuera" : worstZone(t) === "act" ? "Acción" : worstZone(t) ? "Conforme" : "—")}</td>
+          </tr>`;
+        }).join("")}
+      </table>
+      <div class="tbl-note">Celdas sombreadas: ámbar = zona de acción · rojo = fuera de límite de suspensión. Filas rojas: cargas rechazadas y no incorporadas.</div>
+      ${sheetFoot(pg, total)}
+    </div>`);
+  });
+
+  // ---------- media móvil ----------
+  pg++;
+  out.push(`<div class="sheet">
+    ${sheetHead("Media móvil de resistencia", pg, total)}
+    <h2 class="sec">Resistencia a compresión y media móvil de ${p.maWindow} ensayos</h2>
+    <div class="chart-box">
+      <h3>Resistencia @ ${p.cs.age} días (psi)</h3>
+      <div class="lim">Objetivo ${fmt(p.cs.target, 0)} psi · límite de acción ${fmt(p.cs.action, 0)} psi · línea punteada oscura = media móvil</div>
+      ${chartCS5(ma.map((s) => ({ ...s, _ma5: s.ma })), "all")}
+    </div>
+    <table class="rep">
+      <tr><th>Set</th><th>Fecha</th><th>Conduce</th><th class="n">1 día</th><th class="n">${p.cs.age} días</th><th class="n">28 días</th><th class="n">Media móvil</th><th>Evaluación</th></tr>
+      ${cs5.map((s, i) => `<tr>
+        <td class="n">${i + 1}</td><td>${esc(s.date)}</td><td>${esc(s.ticket || "—")}</td>
+        <td class="n">${fmt(s.cs1, 0)}</td>
+        <td class="n${s.cs5 < p.cs.action ? " z-susp" : s.cs5 < p.cs.target ? " z-act" : ""}">${fmt(s.cs5, 0)}</td>
+        <td class="n">${fmt(s.cs28, 0)}</td>
+        <td class="n${s.ma != null && s.ma < p.cs.target ? " z-susp" : ""}">${fmt(s.ma, 0)}</td>
+        <td>${s.cs5 >= p.cs.target ? "Cumple" : s.cs5 >= p.cs.action ? "Bajo objetivo" : "No cumple"}</td>
+      </tr>`).join("")}
+    </table>
+    <div class="tbl-note">${cs5.length} ensayos con resistencia a ${p.cs.age} días · ${bajo} por debajo del objetivo.
+      La media móvil se calcula sobre los ${p.maWindow} ensayos consecutivos incluidos en este reporte.</div>
+    ${sheetFoot(pg, total)}
+  </div>`);
+
+  // ---------- cartas de control (2 hojas) ----------
+  const defs = CHART_DEFS;
+  [[0, 1], [2, 3]].forEach((pair) => {
+    pg++;
+    out.push(`<div class="sheet">
+      ${sheetHead("Cartas de control", pg, total)}
+      ${pair.map((idx) => {
+        const d = defs[idx];
+        const b = bandsFor(d.key);
+        // fmt() evita que la aritmética de punto flotante imprima 147.79999999999998
+        const lim = d.key === "temp"
+          ? `Máximo ${p.tempMax} °F · zona de acción sobre ${p.tempMax - 3} °F`
+          : `Objetivo ${fmt(b.target, 2)} · acción ${fmt(b.actLo, 2)} – ${fmt(b.actHi, 2)} · suspensión ${fmt(b.suspLo, 2)} – ${fmt(b.suspHi, 2)}`;
+        return `<div class="chart-box">
+          <h3>${esc(d.label)}</h3><div class="lim">${lim}</div>
+          ${repChart(d, rows)}
+        </div>`;
+      }).join("")}
+      <div class="tbl-note">Banda verde: dentro de límites de acción · ámbar: zona de acción · rosa: fuera de límite de suspensión.
+        Línea punteada: valor objetivo. ✕ = carga rechazada.</div>
+      ${sheetFoot(pg, total)}
+    </div>`);
+  });
+
+  // ---------- rechazos + firmas ----------
+  pg++;
+  out.push(`<div class="sheet">
+    ${sheetHead("Registro de rechazos y certificación", pg, total)}
+    <h2 class="sec">Cargas rechazadas</h2>
+    ${rej.length ? `<table class="rep">
+      <tr><th>#</th><th>Fecha</th><th>Conduce</th><th>Camión</th><th class="n">yd³</th><th>Identificación</th>
+          <th class="n">Rev.</th><th class="n">P.U.</th><th class="n">Temp</th><th>Motivo</th></tr>
+      ${rej.map((t) => {
+        const m = [];
+        if (zoneSlump(t) === "susp") m.push("Revenimiento fuera de límite");
+        if (zoneUW(t) === "susp") m.push("Peso unitario fuera de tolerancia");
+        if (zoneAir(t) === "susp") m.push("Aire fuera de límite");
+        if (zoneTemp(t) === "susp") m.push("Temperatura sobre el máximo");
+        return `<tr class="rej"><td class="n">${t.n}</td><td>${esc(t.date)}</td><td>${esc(t.ticket || "—")}</td>
+          <td>${esc(t.truck || "—")}</td><td class="n">${fmt(num(t.vol), 1)}</td>
+          <td class="wrap">${esc(shortIdent(t.ident))}</td>
+          <td class="n">${fmt(t.slump, 2)}</td><td class="n">${fmt(t.uw, 2)}</td><td class="n">${fmt(t.temp, 0)}</td>
+          <td class="wrap">${esc(m.join("; ") || t.comments || "Rechazo en campo")}</td></tr>`;
+      }).join("")}
+    </table>` : `<p style="font-size:9.5pt; color:#5a6b7c">No se registraron cargas rechazadas en el período.</p>`}
+
+    <h2 class="sec">Certificación</h2>
+    <p style="font-size:9pt; line-height:1.6">
+      Los ensayos incluidos en este reporte fueron realizados en obra por personal de
+      <b>${esc(db.project.qcFirm || "—")}</b> conforme a los métodos ASTM citados y al plan de control
+      aprobado para la mezcla <b>${esc(db.project.mixId || "—")}</b>. Los datos presentados provienen del
+      registro digital de campo sin transcripción manual intermedia.
+    </p>
+    <div class="signs">
+      <div class="sign"><div class="r">Inspector / Técnico de campo</div></div>
+      <div class="sign"><div class="r">Ingeniero de Control de Calidad</div></div>
+    </div>
+    ${sheetFoot(pg, total)}
+  </div>`);
+
+  document.getElementById("report").innerHTML = out.join("");
+}
+
+loadDB();
+initTheme();
+mountThemeToggle();
+enableLiveSync(() => render());
+render();
+</script>
+</body>
+</html>

@@ -62,19 +62,9 @@ function pdToggleTheme() {
 }
 
 /* ------------------------------------------------------------ datos (solo lectura) */
-function pdReadStore() {
-  try {
-    const raw = localStorage.getItem(C.STORE_KEY);
-    if (raw) { const s = JSON.parse(raw); if (s && Array.isArray(s.tests)) return s; }
-  } catch (e) { console.error("Producción: base local ilegible", e); }
-  return null;
-}
+/* Todo el acceso a datos pasa por EtDatos (datos.js). */
 /* La planta solo ve lo suyo: se filtra por la compañía de su configuración. */
-function pdRows() {
-  const s = pdReadStore();
-  if (!s) return [];
-  return s.tests.filter((t) => (t.company || "—") === cfg.company);
-}
+function pdRows() { return EtDatos.conducesDe(cfg.company); }
 
 /* ------------------------------------------------------------ especificación (contrato v3)
    Los límites los PUBLICA QCheck; la planta solo los LEE. Salen del diseño de
@@ -82,7 +72,7 @@ function pdRows() {
    suyos, podría creerse en rango mientras QC la rechaza.
    Si QC todavía no publicó, se muestra el número SIN colorear. Nunca se inventan
    límites ni se ofrecen en el setup. */
-function pdSpecOf(store, mixId) { return C.readMixSpec(store, mixId); }
+function pdSpecOf(_store, mixId) { return EtDatos.specDe(mixId); }
 function pdZone(spec, field, value) { return C.zoneAgainstSpec(spec, field, value); }
 
 /* Límites de un campo, en el espacio del valor, para dibujar las bandas. */
@@ -245,7 +235,7 @@ const Q_DEFS = [
 ];
 
 function pdRender() {
-  const store = pdReadStore();
+  const store = null;   // las specs se piden a EtDatos, no a un almacén suelto
   const all = pdRows();
   pdFillPickers(all);
 
@@ -303,11 +293,16 @@ function pdRender() {
   $("quality").innerHTML = Q_DEFS.map((d) => qualityCard(d, rows, store)).join("");
   const hayResultados = rows.some((t) => RESULT_FIELDS.some((f) => t[f] != null));
   const haySpec = rows.some((t) => pdSpecOf(store, t.mix));
+  /* Honestidad: e-Ticket no lee la base de otro producto. Los resultados
+     llegarán por integración cuando exista el backend. Mientras tanto la
+     sección se muestra vacía y se dice por qué — nunca se esconde ni se inventa. */
   $("qnote").innerHTML = !hayResultados
-    ? "Todavía no hay resultados del laboratorio para este día."
-    : "Valores medidos por el laboratorio en obra sobre camiones de esta planta. La dispersión (σ) es la uniformidad de la producción; la tendencia compara las últimas 3 cargas con las 3 anteriores. " +
+    ? "<b>Sin resultados del laboratorio.</b> Esta sección se llena cuando un laboratorio " +
+      "devuelve las pruebas de estos camiones por integración. e-Ticket funciona igual sin ella: " +
+      "no depende de ningún otro sistema."
+    : "Valores devueltos por el laboratorio sobre camiones de esta planta. La dispersión (σ) es la uniformidad de la producción; la tendencia compara las últimas 3 cargas con las 3 anteriores. " +
       (haySpec
-        ? "Los <b>límites vienen del diseño de mezcla aprobado del proyecto</b>, publicados por el laboratorio: verde dentro, ámbar en zona de acción, rojo fuera."
+        ? "Los <b>límites vienen del diseño de mezcla aprobado</b>, publicados por el laboratorio: verde dentro, ámbar en zona de acción, rojo fuera."
         : "El laboratorio <b>todavía no ha publicado los límites</b> de estas mezclas, así que los valores se muestran sin evaluar.");
 
   /* ---- tabla de camiones (sin un solo dato del proyecto) ---- */
@@ -355,7 +350,7 @@ function pdInit() {
   pdRender();
 
   window.addEventListener("storage", (e) => {
-    if (e.key === C.STORE_KEY) pdRender();
+    if (EtDatos.esNuestraClave(e.key)) pdRender();
     if (e.key === THEME_KEY && e.newValue) pdApplyTheme(e.newValue);
   });
 }

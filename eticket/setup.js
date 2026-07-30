@@ -99,7 +99,17 @@ function stSave() {
   if (!plants.some((p) => p.default)) plants[0].default = true;
   if (!mixes.some((m) => m.default)) mixes[0].default = true;
 
-  etConfigWrite({ version: 1, company, plants, mixes, nextTicket: Math.floor(next), paper: draft.paper });
+  const publicUrl = $("s-url").value.trim().replace(/\/+$/, "");
+  if (publicUrl && !/^https?:\/\/.+/i.test(publicUrl)) {
+    toast("La URL pública debe empezar con http:// o https://", true); $("s-url").focus(); return;
+  }
+  const nOr0 = (id) => { const v = Number($(id).value.trim()); return Number.isFinite(v) && v >= 0 ? v : 0; };
+
+  etConfigWrite({
+    version: 1, company, plants, mixes, nextTicket: Math.floor(next), paper: draft.paper,
+    publicUrl,
+    billing: { price: nOr0("s-price"), tripFee: nOr0("s-trip"), taxPct: nOr0("s-tax") },
+  });
   toast("Configuración guardada");
   setTimeout(() => location.href = "index.html", 500);
 }
@@ -125,6 +135,11 @@ function stInit() {
 
   $("s-company").value = draft.company;
   $("s-next").value = draft.nextTicket;
+  $("s-url").value = (cfg && cfg.publicUrl) || "";
+  const b = etBilling(cfg || {});
+  $("s-price").value = b.price || "";
+  $("s-trip").value = b.tripFee || "";
+  $("s-tax").value = b.taxPct || "";
   $("intro").innerHTML = cfg
     ? "Ajustes de la herramienta. Los cambios aplican al próximo ticket que genere."
     : "Antes de despachar el primer camión hay que decirle a e-Ticket <b>quién es usted y qué produce</b>. Toma un minuto y se puede cambiar después.";
