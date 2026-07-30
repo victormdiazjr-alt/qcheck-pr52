@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Muestras — QCheck</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230a0d12'/><circle cx='50' cy='50' r='26' fill='none' stroke='%2396c93d' stroke-width='8'/></svg>">
+<style>
+/* ============================================================
+   MUESTRAS — entrada de resultados en iPad.
+   Mismo lenguaje del Field Display. Se opera de pie, junto al
+   camión, con las manos sucias: nada de campos pequeños ni
+   teclado del sistema. Todo botón gordo.
+   ============================================================ */
+:root {
+  --bg: #0a0d12;
+  --surface: #12171f;
+  --surface-2: #1a2029;
+  --text: #eef2f6;
+  --muted: #77848f;
+  --hairline: rgba(255,255,255,.10);
+  --ok: #34d27b;
+  --act: #f5b83d;
+  --susp: #ff5a52;
+  --idle: #5b8dbf;
+  --logo-navy: #4a63d8;
+}
+:root[data-theme="light"] {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --text: #16222e;
+  --muted: #76838f;
+  --hairline: rgba(15,30,45,.12);
+  --ok: #0e9d55;
+  --act: #c8880a;
+  --susp: #e0362d;
+  --idle: #3d76ab;
+  --logo-navy: #2b3a8c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  height: 100vh; display: flex; flex-direction: column;
+  user-select: none; -webkit-user-select: none;
+}
+
+/* ---------- header ---------- */
+header {
+  display: flex; align-items: center; gap: 1.4vw;
+  padding: 2vh 2.4vw 1.6vh;
+  border-bottom: 1px solid var(--hairline);
+  flex: none;
+}
+.logo { height: 5.6vh; width: auto; flex: none; }
+.htitle { font-size: 2.6vh; font-weight: 750; letter-spacing: .01em; }
+.hsub { font-size: 1.5vh; color: var(--muted); letter-spacing: .2em; text-transform: uppercase; font-weight: 700; }
+header .spacer { flex: 1; }
+.truck-pick {
+  background: var(--surface); border: 2px solid var(--hairline); color: var(--text);
+  border-radius: 14px; padding: 1.4vh 1.6vw; font-size: 2vh; font-weight: 700;
+  font-family: inherit; min-width: 26vw;
+}
+
+/* ---------- cuerpo ---------- */
+.body { flex: 1; display: grid; grid-template-columns: 1fr 30vw; gap: 1.6vw; padding: 1.8vh 2.4vw; min-height: 0; }
+.left { display: flex; flex-direction: column; gap: 1.6vh; min-height: 0; }
+
+/* tarjeta del camión */
+.truck-card {
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: 18px;
+  padding: 1.8vh 2vw; display: flex; align-items: center; gap: 1.6vw; flex: none;
+}
+.truck-card .tnum { font-size: 7.4vh; font-weight: 250; line-height: 1; font-variant-numeric: tabular-nums; }
+.truck-card .tlbl { font-size: 1.4vh; font-weight: 800; letter-spacing: .3em; color: var(--muted); text-transform: uppercase; margin-bottom: .4vh; }
+.truck-card .tmeta { font-size: 1.9vh; color: var(--muted); line-height: 1.5; }
+.truck-card .tmeta b { color: var(--text); font-weight: 700; }
+.truck-card .tplant { display: flex; align-items: center; gap: .5vw; font-size: 1.6vh; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: .6vh; }
+.truck-card .tplant i { width: 1vh; height: 1vh; border-radius: 50%; background: var(--idle); box-shadow: 0 0 1vh var(--idle); }
+
+/* rejilla de valores */
+.vals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.4vw 1.4vw; flex: 1; min-height: 0; }
+.val {
+  background: var(--surface); border: 3px solid var(--hairline); border-radius: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; position: relative; transition: border-color .15s, background .15s;
+}
+.val.active { border-color: var(--idle); background: var(--surface-2); }
+.val .k { font-size: 1.7vh; font-weight: 800; letter-spacing: .26em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: .5vw; }
+.val .k i { width: 1.1vh; height: 1.1vh; border-radius: 50%; background: var(--dc, transparent); box-shadow: 0 0 1.2vh var(--dc, transparent); }
+.val .v { font-size: 8.6vh; font-weight: 220; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.val .v.empty { color: var(--muted); font-weight: 150; }
+.val .u { font-size: 1.6vh; font-weight: 700; letter-spacing: .2em; color: var(--muted); }
+.val .lim { position: absolute; bottom: 1.2vh; font-size: 1.3vh; color: var(--muted); letter-spacing: .1em; }
+.val.p-amber { --dc: var(--act); border-color: var(--act); }
+.val.p-amber .v { color: var(--act); font-weight: 320; }
+.val.p-red { --dc: var(--susp); border-color: var(--susp); }
+.val.p-red .v { color: var(--susp); font-weight: 320; text-shadow: 0 0 3vh rgba(255,90,82,.5); }
+
+/* ---------- panel derecho: teclado ---------- */
+.right { display: flex; flex-direction: column; gap: 1.2vh; min-height: 0; }
+.kp-head {
+  background: var(--surface-2); border-radius: 14px; padding: 1.2vh 1vw; text-align: center; flex: none;
+}
+.kp-head .f { font-size: 1.6vh; font-weight: 800; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); }
+.kp-head .n { font-size: 3.4vh; font-weight: 400; font-variant-numeric: tabular-nums; }
+.steppers { display: grid; grid-template-columns: 1fr 1fr; gap: 1vh 1vw; flex: none; }
+.step {
+  background: var(--surface); border: 2px solid var(--hairline); color: var(--text);
+  border-radius: 14px; padding: 1.6vh 0; font-size: 2.4vh; font-weight: 800;
+  font-family: inherit; cursor: pointer;
+}
+.step:active { background: var(--idle); border-color: var(--idle); color: #fff; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vh 1vw; flex: 1; min-height: 0; }
+.key {
+  background: var(--surface); border: 2px solid var(--hairline); color: var(--text);
+  border-radius: 14px; font-size: 3.4vh; font-weight: 600; font-family: inherit;
+  cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.key:active { background: var(--idle); border-color: var(--idle); color: #fff; }
+.key.wide { grid-column: span 1; font-size: 2.4vh; font-weight: 800; }
+.key.del { color: var(--act); }
+.key.clr { color: var(--susp); }
+
+/* ---------- pie: veredicto + submit ---------- */
+footer {
+  display: flex; align-items: center; gap: 1.6vw;
+  padding: 1.6vh 2.4vw 2.2vh; border-top: 1px solid var(--hairline); flex: none;
+}
+.verdict-pre { display: flex; align-items: center; gap: 1vw; }
+.verdict-pre .ring {
+  width: 7vh; height: 7vh; border-radius: 50%; border: .55vh solid var(--vc, var(--muted));
+  color: var(--vc, var(--muted)); display: flex; align-items: center; justify-content: center;
+  font-size: 3.4vh; font-weight: 300; box-shadow: 0 0 3vh -1vh var(--vc, transparent);
+}
+.verdict-pre .txt .w { font-size: 3vh; font-weight: 750; color: var(--vc, var(--muted)); line-height: 1.1; }
+.verdict-pre .txt .s { font-size: 1.5vh; color: var(--muted); letter-spacing: .18em; text-transform: uppercase; font-weight: 700; }
+.v-ok { --vc: var(--ok); } .v-act { --vc: var(--act); } .v-susp { --vc: var(--susp); } .v-idle { --vc: var(--muted); }
+footer .spacer { flex: 1; }
+.btn-sub {
+  background: var(--ok); color: #06180d; border: none; border-radius: 16px;
+  padding: 2.4vh 4vw; font-size: 2.8vh; font-weight: 850; letter-spacing: .12em;
+  text-transform: uppercase; font-family: inherit; cursor: pointer;
+}
+.btn-sub.rej { background: var(--susp); color: #fff; }
+.btn-sub:disabled { background: var(--surface-2); color: var(--muted); cursor: default; }
+.btn-ghost {
+  background: transparent; color: var(--muted); border: 2px solid var(--hairline);
+  border-radius: 16px; padding: 2.4vh 2.2vw; font-size: 1.9vh; font-weight: 800;
+  letter-spacing: .14em; text-transform: uppercase; font-family: inherit; cursor: pointer;
+}
+
+/* ---------- botón "nuevo camión" con mixer ---------- */
+/* Botón solo gráfico: pastilla suave con relieve, sin una sola palabra */
+.btn-truck {
+  display: flex; align-items: center; justify-content: center;
+  width: 13vh; height: 9.6vh; padding: 0 1.2vh;
+  border-radius: 2.6vh; cursor: pointer; font-family: inherit;
+  background: linear-gradient(165deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--hairline);
+  box-shadow: 0 .7vh 2.2vh rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.07);
+  transition: transform .16s cubic-bezier(.2,.7,.3,1), box-shadow .22s, border-color .22s;
+}
+.btn-truck:hover {
+  border-color: rgba(52,210,123,.55);
+  box-shadow: 0 .9vh 2.6vh rgba(0,0,0,.4), 0 0 0 .45vh rgba(52,210,123,.11), inset 0 1px 0 rgba(255,255,255,.09);
+  transform: translateY(-.25vh);
+}
+.btn-truck:active { transform: scale(.96) translateY(0); box-shadow: 0 .3vh 1vh rgba(0,0,0,.3), inset 0 2px 5px rgba(0,0,0,.22); }
+.btn-truck .mixer { width: 100%; height: auto; display: block; }
+
+/* paleta del icono, sensible al tema */
+:root {
+  --mx-hi: #a6b3c3; --mx-mid: #74808f; --mx-lo: #4d5865; --mx-edge: #dbe4ed;
+  --mx-band: #e3eaf2; --mx-tyre: #232a33; --mx-hub: #7d8898;
+  --mx-glass: rgba(133,190,240,.5); --mx-shadow: rgba(0,0,0,.32); --mx-glow: rgba(52,210,123,.25);
+}
+:root[data-theme="light"] {
+  --mx-hi: #b6c1cd; --mx-mid: #8a95a3; --mx-lo: #64707e; --mx-edge: #ffffff;
+  --mx-band: #ffffff; --mx-tyre: #3b434e; --mx-hub: #aab4c0;
+  --mx-glass: rgba(96,152,205,.5); --mx-shadow: rgba(15,30,45,.16); --mx-glow: rgba(14,157,85,.18);
+}
+
+/* ---------- hoja de entrada (escanear / manual) ---------- */
+.sheet {
+  position: fixed; inset: 0; z-index: 520; display: none;
+  align-items: center; justify-content: center;
+  background: rgba(6,9,13,.88); backdrop-filter: blur(5px);
+}
+.sheet.show { display: flex; }
+.sbox {
+  background: var(--surface); border: 2px solid var(--hairline); border-radius: 24px;
+  padding: 4vh 3.4vw; width: min(74vw, 900px); max-height: 92vh; overflow-y: auto;
+}
+.sbox h2 { font-size: 3.4vh; margin-bottom: .6vh; }
+.sbox .sub { font-size: 1.8vh; color: var(--muted); margin-bottom: 3.4vh; }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 2vw; }
+.opts.opts-3 { grid-template-columns: repeat(3, 1fr); gap: 1.4vw; }
+.opts.opts-3 .opt { padding: 2.8vh 1vw; }
+.opts.opts-3 .opt .ico { width: 7.6vh; height: 7.6vh; margin-bottom: 1.2vh; }
+.opts.opts-3 .opt .t { font-size: 2.2vh; }
+.opts.opts-3 .opt .d { font-size: 1.35vh; }
+label.opt { display: block; }
+.opt {
+  background: var(--surface-2); border: 3px solid var(--hairline); border-radius: 20px;
+  padding: 3.4vh 1.6vw; text-align: center; cursor: pointer; font-family: inherit; color: var(--text);
+}
+.opt:active { border-color: var(--ok); }
+.opt .ico { display: block; margin: 0 auto 1.6vh; width: 9vh; height: 9vh; }
+.opt .t { font-size: 2.6vh; font-weight: 800; }
+.opt .d { font-size: 1.5vh; color: var(--muted); margin-top: .8vh; line-height: 1.4; }
+.remember {
+  display: flex; align-items: center; gap: 1.2vw; margin-top: 3vh;
+  background: var(--surface-2); border-radius: 14px; padding: 1.8vh 2vw; cursor: pointer;
+}
+.remember .box {
+  width: 4.4vh; height: 4.4vh; border-radius: 10px; border: 3px solid var(--muted);
+  display: flex; align-items: center; justify-content: center; font-size: 2.6vh; color: var(--ok); flex: none;
+}
+.remember.on .box { border-color: var(--ok); background: rgba(52,210,123,.14); }
+.remember .txt { font-size: 1.9vh; font-weight: 700; }
+.remember .txt s { display: block; font-size: 1.4vh; color: var(--muted); font-weight: 600; text-decoration: none; }
+.sheet-foot { display: flex; gap: 1.4vw; justify-content: flex-end; margin-top: 3vh; align-items: center; }
+.sheet-foot .spacer { flex: 1; }
+.link-reset { background: none; border: none; color: var(--idle); font-family: inherit; font-size: 1.6vh; font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+/* campos de entrada manual */
+.mgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2vh 2vw; }
+.mgrid .f { display: flex; flex-direction: column; gap: .8vh; }
+.mgrid .f.wide { grid-column: span 3; }
+.mgrid label { font-size: 1.4vh; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.mgrid input, .mgrid select {
+  background: var(--surface-2); border: 2px solid var(--hairline); color: var(--text);
+  border-radius: 14px; padding: 2vh 1.4vw; font-size: 3vh; font-weight: 700;
+  font-family: inherit; font-variant-numeric: tabular-nums; width: 100%;
+}
+.mgrid input:focus, .mgrid select:focus { outline: none; border-color: var(--idle); }
+
+/* cámara */
+#scan-wrap { position: relative; border-radius: 18px; overflow: hidden; background: #000; }
+#scan-wrap video { width: 100%; max-height: 52vh; display: block; object-fit: cover; }
+#scan-wrap .frame {
+  position: absolute; inset: 14% 20%; border: 4px solid rgba(255,255,255,.9); border-radius: 18px;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,.42);
+}
+
+/* ---------- confirmación de rechazo ---------- */
+#confirm {
+  position: fixed; inset: 0; z-index: 500; display: none;
+  align-items: center; justify-content: center;
+  background: rgba(6,9,13,.86); backdrop-filter: blur(4px);
+}
+#confirm.show { display: flex; }
+.cbox {
+  background: var(--surface); border: 3px solid var(--susp); border-radius: 22px;
+  padding: 4vh 4vw; max-width: 60vw; text-align: center;
+}
+.cbox h2 { font-size: 4vh; color: var(--susp); margin-bottom: 1.4vh; }
+.cbox p { font-size: 2.1vh; color: var(--muted); line-height: 1.6; margin-bottom: 3vh; }
+.cbox .row { display: flex; gap: 1.4vw; justify-content: center; }
+
+/* ---------- toast ---------- */
+#toast {
+  position: fixed; bottom: 3vh; left: 50%; transform: translateX(-50%);
+  background: var(--surface); border: 2px solid var(--ok); color: var(--text);
+  padding: 1.6vh 3vw; border-radius: 999px; font-size: 2vh; font-weight: 700;
+  opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 600;
+}
+#toast.show { opacity: 1; }
+
+/* Controles dentro del pie — nunca encima de los botones de acción */
+.icon-btn {
+  width: 7.2vh; height: 7.2vh; border-radius: 50%; flex: none; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--hairline); background: transparent; color: var(--muted);
+  font-family: inherit; cursor: pointer; transition: color .15s, border-color .15s;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--muted); }
+.icon-btn:active { border-color: var(--idle); color: var(--idle); }
+.icon-btn.muted { opacity: .55; border-style: dashed; }
+.empty-state { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--muted); font-size: 2.4vh; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <svg class="logo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-label="QCheck">
+    <path d="M 69.7 93.6 A 40 40 0 1 1 95.85 59.49" fill="none" stroke="var(--logo-navy)" stroke-width="15"/>
+    <polyline points="62,64 86,82 114,46" fill="none" stroke="#96c93d" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div>
+    <div class="htitle">Muestras</div>
+    <div class="hsub" id="hsub">QCheck · Segarra Engineering</div>
+  </div>
+  <div class="spacer"></div>
+  <select class="truck-pick" id="truck-pick" onchange="pickTruck(this.value)"></select>
+</header>
+
+<div class="body" id="body"></div>
+
+<footer id="foot"></footer>
+
+<!-- hoja de entrada: escanear o manual -->
+<div class="sheet" id="intake">
+  <div class="sbox">
+    <h2>Nuevo camión</h2>
+    <div class="sub">¿Cómo desea entrar el conduce?</div>
+    <div class="opts opts-3">
+      <button class="opt" onclick="chooseIntake('scan')">
+        <svg class="ico" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 20V10h10M48 10h10v10M58 44v10H48M16 54H6V44"/>
+          <rect x="19" y="19" width="11" height="11" rx="1.5"/>
+          <rect x="34" y="19" width="11" height="11" rx="1.5"/>
+          <rect x="19" y="34" width="11" height="11" rx="1.5"/>
+          <path d="M34 34h5v5M45 34v5M39 45h6" stroke-width="3.4"/>
+        </svg>
+        <div class="t">Escanear QR</div>
+        <div class="d">Conduce con código · entra todo solo</div>
+      </button>
+      <label class="opt">
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="photoIntake(this)">
+        <svg class="ico" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 20a4 4 0 0 1 4-4h6l4-6h16l4 6h6a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"/>
+          <circle cx="32" cy="32" r="10"/>
+        </svg>
+        <div class="t">Foto del conduce</div>
+        <div class="d">Conduce en papel · queda como evidencia</div>
+      </label>
+      <button class="opt" onclick="chooseIntake('manual')">
+        <svg class="ico" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="10" y="8" width="44" height="34" rx="4"/>
+          <path d="M18 18h6M30 18h6M42 18h4M18 27h6M30 27h6M42 27h4M22 36h20" stroke-width="3.6"/>
+          <path d="M24 50h16M32 42v14" stroke-width="3.6"/>
+        </svg>
+        <div class="t">Entrada manual</div>
+        <div class="d">Escribir el ticket · sin código</div>
+      </button>
+    </div>
+    <div id="scan-support" style="display:none; margin-top:2vh; font-size:1.5vh; color:var(--act); text-align:center"></div>
+    <div class="remember" id="remember" onclick="toggleRemember()">
+      <div class="box" id="remember-box"></div>
+      <div class="txt">No volver a preguntar
+        <s>Usar siempre el método que elija ahora</s></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-ghost" onclick="closeSheet('intake')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- escanear -->
+<div class="sheet" id="scan">
+  <div class="sbox">
+    <h2>Escanear conduce</h2>
+    <div class="sub" id="scan-sub">Apunte la cámara al código QR del ticket</div>
+    <div id="scan-wrap"><video id="scan-video" playsinline muted></video><div class="frame"></div></div>
+    <div class="sheet-foot">
+      <button class="link-reset" onclick="resetIntakePref()">Cambiar método de entrada</button>
+      <div class="spacer"></div>
+      <button class="btn-ghost" onclick="stopScan(); closeSheet('scan')">Cancelar</button>
+      <button class="btn-sub" onclick="stopScan(); closeSheet('scan'); openManual()">Entrar manual</button>
+    </div>
+  </div>
+</div>
+
+<!-- entrada manual -->
+<div class="sheet" id="manual">
+  <div class="sbox">
+    <h2>Nuevo camión</h2>
+    <div class="sub">Datos del conduce</div>
+    <div class="mgrid">
+      <div class="f"><label>Ticket / Conduce *</label><input id="m-ticket" inputmode="numeric" placeholder="66905"></div>
+      <div class="f"><label>Camión</label><input id="m-truck" inputmode="numeric" placeholder="115"></div>
+      <div class="f"><label>Volumen (CY)</label><input id="m-vol" inputmode="decimal" value="10"></div>
+      <div class="f"><label>Compañía</label><input id="m-company" placeholder="Concretec"></div>
+      <div class="f"><label>Planta</label><input id="m-plant" placeholder="01-SAN JUAN"></div>
+      <div class="f"><label>Hora batch</label><input id="m-batch" type="time"></div>
+      <div class="f wide"><label>Losa / Identificación</label><input id="m-ident" placeholder="Phase 10 - Slab L3-0.443"></div>
+    </div>
+    <div id="m-photo" style="display:flex; align-items:center; gap:1.2vw; margin-top:2vh"></div>
+    <div class="sheet-foot">
+      <button class="link-reset" onclick="resetIntakePref()">Cambiar método de entrada</button>
+      <div class="spacer"></div>
+      <button class="btn-ghost" onclick="closeSheet('manual')">Cancelar</button>
+      <button class="btn-sub" onclick="saveManual()">Registrar llegada</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirm">
+  <div class="cbox">
+    <h2>Confirmar rechazo</h2>
+    <p id="confirm-txt"></p>
+    <div class="row">
+      <button class="btn-ghost" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn-sub rej" onclick="doSubmit(true)">Sí, rechazar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="modal-root"></div>
+
+<script src="seed.js"></script>
+<script src="core.js"></script>
+<script>
+"use strict";
+
+const state = { day: null, n: null, field: "slump", buf: {} };
+
+/* ============================================================
+   Sonido — confirma cada número marcado y cada envío.
+   Comparte la preferencia con el Field Display (clave qc-sound).
+   ============================================================ */
+let actx = null;
+let soundOn = localStorage.getItem("qc-sound") !== "off";
+function audioLocked() { return !actx || actx.state !== "running"; }
+function ensureAudio() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (actx && actx.state === "suspended") actx.resume().catch(() => {});
+}
+function tone(f, t0, dur, type = "sine", g = 0.16) {
+  if (!soundOn || audioLocked()) return;
+  const o = actx.createOscillator(), gn = actx.createGain();
+  o.type = type; o.frequency.value = f;
+  o.connect(gn); gn.connect(actx.destination);
+  const t = actx.currentTime + t0;
+  gn.gain.setValueAtTime(0, t);
+  gn.gain.linearRampToValueAtTime(g, t + 0.008);
+  gn.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+  o.start(t); o.stop(t + dur + 0.03);
+}
+const snd = {
+  key:   () => tone(1180, 0, 0.05, "triangle", 0.13),   // número marcado
+  step:  () => tone(880, 0, 0.055, "triangle", 0.12),   // ± stepper
+  field: () => tone(660, 0, 0.07, "sine", 0.11),        // cambio de campo
+  clear: () => tone(420, 0, 0.09, "triangle", 0.12),    // borrar
+  ok:    () => { tone(523, 0, 0.12); tone(659, 0.12, 0.12); tone(784, 0.25, 0.34); },
+  bad:   () => { tone(210, 0, 0.28, "square", 0.14); tone(165, 0.32, 0.46, "square", 0.14); },
+  truck: () => { tone(587, 0, 0.13, "sine", 0.2); tone(784, 0.15, 0.13, "sine", 0.2); tone(988, 0.3, 0.3, "sine", 0.2); },
+};
+
+const ICON_SPK = `<svg viewBox="0 0 24 24" style="width:52%;height:52%" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 5.2 7 9H3.6v6H7l4.5 3.8z" fill="currentColor" stroke="none"/><path d="M15.4 9a4.4 4.4 0 0 1 0 6M18.1 6.6a8 8 0 0 1 0 10.8"/></svg>`;
+const ICON_MUTE = `<svg viewBox="0 0 24 24" style="width:52%;height:52%" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 5.2 7 9H3.6v6H7l4.5 3.8z" fill="currentColor" stroke="none"/><path d="M15.8 9.6l5 4.8M20.8 9.6l-5 4.8"/></svg>`;
+
+function toggleSound() {
+  soundOn = !soundOn;
+  localStorage.setItem("qc-sound", soundOn ? "on" : "off");
+  if (soundOn) { ensureAudio(); snd.key(); }
+  render();
+}
+/* Desbloqueo silencioso del audio al primer toque (política del navegador) */
+["pointerdown", "touchstart", "keydown"].forEach((ev) =>
+  window.addEventListener(ev, ensureAudio, { passive: true }));
+
+const FIELDS = [
+  { key: "slump", label: "Slump",      unit: "in",  step: 0.25, dp: 2 },
+  { key: "uw",    label: "Peso Unit",  unit: "pcf", step: 0.1,  dp: 2 },
+  { key: "air",   label: "Aire",       unit: "%",   step: 0.1,  dp: 1 },
+  { key: "temp",  label: "Temp",       unit: "°F",  step: 1,    dp: 0 },
+];
+
+/* ---------- proximidad a límites (igual que el Field Display) ---------- */
+function proxRange(v, target, suspLo, suspHi) {
+  if (v == null) return null;
+  if ((suspLo != null && v < suspLo) || (suspHi != null && v > suspHi)) return "red";
+  const side = v >= target ? suspHi - target : target - suspLo;
+  if (!(side > 0)) return null;
+  const d = v >= target ? suspHi - v : v - suspLo;
+  const p = d / side;
+  if (p <= 0.34) return "red";
+  if (p <= 0.67) return "amber";
+  return null;
+}
+function proximity(key, vals, uwTarget) {
+  const p = db.plan;
+  if (key === "slump") return proxRange(vals.slump, p.slump.target, p.slump.suspLo, p.slump.suspHi);
+  if (key === "air")   return proxRange(vals.air, p.air.target, p.air.suspLo, p.air.suspHi);
+  if (key === "uw") {
+    const t = uwTarget ?? p.uw.target;
+    return proxRange(vals.uw, t, t - p.uw.susp, t + p.uw.susp);
+  }
+  if (key === "temp") {
+    const v = vals.temp; if (v == null) return null;
+    if (v > p.tempMax) return "red";
+    const d = (p.tempMax - v) / 10;
+    if (d <= 0.34) return "red";
+    if (d <= 0.67) return "amber";
+    return null;
+  }
+  return null;
+}
+function limitText(key, uwTarget) {
+  const p = db.plan;
+  if (key === "slump") return `${p.slump.actLo}–${p.slump.actHi}"  ·  susp ${p.slump.suspLo}–${p.slump.suspHi}`;
+  if (key === "air")   return `${p.air.actLo}–${p.air.actHi}%  ·  susp ${p.air.suspLo}–${p.air.suspHi}`;
+  if (key === "uw")    { const t = uwTarget ?? p.uw.target; return `${fmt(t, 1)} ± ${p.uw.act}  ·  susp ± ${p.uw.susp}`; }
+  if (key === "temp")  return `máx ${p.tempMax} °F`;
+  return "";
+}
+
+/* ---------- selección de camión ---------- */
+function pendingTrucks(day) {
+  // camiones del día sin resultados completos de pruebas frescas
+  return testsOfDate(day).filter((t) => num(t.slump) == null || num(t.uw) == null);
+}
+function currentTest() { return state.n == null ? null : db.tests.find((t) => t.n === state.n) || null; }
+
+function pickTruck(n) {
+  state.n = Number(n);
+  const t = currentTest();
+  state.buf = t ? { slump: num(t.slump), uw: num(t.uw), air: num(t.air), temp: num(t.temp) } : {};
+  state.field = "slump";
+  render();
+}
+
+/* ---------- teclado ---------- */
+/* Al cambiar de campo se reinicia el tecleo: el próximo dígito empieza un
+   número nuevo, no se pega al valor que ya estaba. */
+function setField(k) { snd.field(); state.field = k; state._typing = null; state._str = ""; render(); }
+function keyPress(ch) {
+  const f = state.field;
+  const cur = state.buf[f];
+  let s = state._typing === f ? (state._str || "") : "";
+  if (ch === "del") { snd.clear(); s = s.slice(0, -1); }
+  else if (ch === ".") { snd.key(); if (!s.includes(".")) s = (s || "0") + "."; }
+  else { snd.key(); s = s + ch; }   // confirma que el número entró
+  state._typing = f; state._str = s;
+  state.buf[f] = s === "" || s === "." ? null : Number(s);
+  render();
+}
+function bump(delta) {
+  snd.step();
+  const f = state.field;
+  const def = FIELDS.find((x) => x.key === f);
+  const base = state.buf[f] == null ? (f === "temp" ? 85 : db.plan[f === "uw" ? "uw" : f]?.target ?? 0) : state.buf[f];
+  const v = Math.max(0, Math.round((base + delta * def.step) / def.step) * def.step);
+  state.buf[f] = Number(v.toFixed(def.dp));
+  state._typing = null; state._str = "";
+  render();
+}
+function clearField() { snd.clear(); state.buf[state.field] = null; state._typing = null; state._str = ""; render(); }
+
+/* Limpia los cuatro resultados de este camión */
+function clearAll() {
+  snd.clear();
+  state.buf = {}; state._typing = null; state._str = ""; state.field = "slump";
+  render();
+  toast("Resultados borrados");
+}
+
+/* ---------- veredicto en vivo ---------- */
+function liveVerdict() {
+  const t = currentTest();
+  const uwT = t ? (num(t.uwTarget) ?? db.plan.uw.target) : db.plan.uw.target;
+  const pseudo = { slump: state.buf.slump, uw: state.buf.uw, air: state.buf.air, temp: state.buf.temp, uwTarget: uwT };
+  const w = worstZone(pseudo);
+  const any = ["slump", "uw", "air", "temp"].some((k) => state.buf[k] != null);
+  if (!any) return { cls: "idle", mark: "·", word: "En espera", sub: "Entre los resultados", bad: false, ready: false };
+  const ready = state.buf.slump != null && state.buf.uw != null;
+  if (w === "susp") return { cls: "susp", mark: "✕", word: "Rechazar", sub: "Fuera de límite de suspensión", bad: true, ready };
+  if (w === "act")  return { cls: "act", mark: "✓", word: "Aceptar", sub: "Zona de acción · vigilar", bad: false, ready };
+  return { cls: "ok", mark: "✓", word: "Aceptar", sub: "Dentro de límites", bad: false, ready };
+}
+
+/* ---------- render ---------- */
+function render() {
+  const days = testDates();
+  const today = todayISO();
+  state.day = days.includes(today) ? today : days[0];
+  const pend = pendingTrucks(state.day);
+  const all = testsOfDate(state.day);
+
+  // selector de camión
+  const pick = document.getElementById("truck-pick");
+  const list = all.slice().reverse();
+  pick.innerHTML = list.length
+    ? list.map((t) => {
+        const done = num(t.slump) != null && num(t.uw) != null;
+        return `<option value="${t.n}" ${t.n === state.n ? "selected" : ""}>Camión ${esc(t.truck || "—")} · ticket ${esc(t.ticket || "—")}${done ? "  ✓" : "  ·  pendiente"}</option>`;
+      }).join("")
+    : `<option>Sin camiones hoy</option>`;
+  if (state.n == null && list.length) {
+    const first = pend.length ? pend[pend.length - 1] : list[0];
+    state.n = first.n;
+    state.buf = { slump: num(first.slump), uw: num(first.uw), air: num(first.air), temp: num(first.temp) };
+    pick.value = state.n;
+  }
+  document.getElementById("hsub").textContent =
+    `${db.project.qcFirm || "QCheck"} · ${fmtDate(state.day)} · ${all.length} camiones`;
+
+  const t = currentTest();
+  const body = document.getElementById("body");
+  const foot = document.getElementById("foot");
+
+  if (!t) {
+    body.innerHTML = `<div class="empty-state">No hay camiones registrados hoy.<br>Escanee un conduce en la pantalla de Recepción.</div>`;
+    foot.innerHTML = "";
+    return;
+  }
+
+  const uwT = num(t.uwTarget) ?? db.plan.uw.target;
+  const def = FIELDS.find((x) => x.key === state.field);
+
+  body.innerHTML = `
+    <div class="left">
+      <div class="truck-card">
+        <div>
+          <div class="tlbl">Camión</div>
+          <div class="tnum">${esc(t.truck || "—")}</div>
+        </div>
+        <div class="tmeta">
+          Ticket <b>${esc(t.ticket || "—")}</b><br>
+          <b>${fmt(num(t.vol), 1)}</b> CY · llegó <b>${esc(t.arrive || "—")}</b><br>
+          ${esc(shortIdent(t.ident))}
+          <div class="tplant"><i></i>${esc(t.plant || "—")}</div>
+        </div>
+      </div>
+      <div class="vals">
+        ${FIELDS.map((f) => {
+          const v = state.buf[f.key];
+          const prox = proximity(f.key, state.buf, uwT);
+          return `<div class="val ${state.field === f.key ? "active" : ""} ${prox ? "p-" + prox : ""}" onclick="setField('${f.key}')">
+            <div class="k"><i></i>${f.label}</div>
+            <div class="v ${v == null ? "empty" : ""}">${v == null ? "—" : fmt(v, f.dp)}</div>
+            <div class="u">${f.unit}</div>
+            <div class="lim">${limitText(f.key, uwT)}</div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="kp-head">
+        <div class="f">${def.label} (${def.unit})</div>
+        <div class="n">${state.buf[state.field] == null ? "—" : fmt(state.buf[state.field], def.dp)}</div>
+      </div>
+      <div class="steppers">
+        <button class="step" onclick="bump(-1)">− ${def.step}</button>
+        <button class="step" onclick="bump(1)">+ ${def.step}</button>
+      </div>
+      <div class="keypad">
+        ${[1,2,3,4,5,6,7,8,9].map((d) => `<button class="key" onclick="keyPress('${d}')">${d}</button>`).join("")}
+        <button class="key" onclick="keyPress('.')">.</button>
+        <button class="key" onclick="keyPress('0')">0</button>
+        <button class="key del" onclick="keyPress('del')">⌫</button>
+        <button class="key wide" onclick="clearField()">Borrar</button>
+        <button class="key wide" onclick="nextField()">Siguiente ▸</button>
+        <button class="key wide clr" onclick="clearAll()">Limpiar todo</button>
+      </div>
+    </div>`;
+
+  const v = liveVerdict();
+  foot.dataset.pending = "1";
+  foot.innerHTML = `
+    <div class="verdict-pre v-${v.cls}">
+      <div class="ring">${v.mark}</div>
+      <div class="txt"><div class="w">${v.word}</div><div class="s">${v.sub}</div></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon-btn ${soundOn ? "" : "muted"}" id="sound-toggle" onclick="toggleSound()"
+      title="${soundOn ? "Silenciar" : "Activar sonido"}" aria-label="Sonido">${soundOn ? ICON_SPK : ICON_MUTE}</button>
+    <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" aria-label="Tema"></button>
+    <button class="btn-truck" onclick="newTruck()" title="Nuevo camión — ${intakeLabel()}" aria-label="Nuevo camión">
+      ${MIXER_SVG}
+    </button>
+    <button class="btn-sub ${v.bad ? "rej" : ""}" ${v.ready ? "" : "disabled"} onclick="askSubmit()">
+      ${v.bad ? "Enviar rechazo" : "Enviar resultados"}
+    </button>`;
+  applyTheme(document.documentElement.dataset.theme || "dark"); // repinta el icono del tema
+}
+
+/* ============================================================
+   Nuevo camión: mixer + escanear / manual, con memoria de método
+   ============================================================ */
+/* Mixer minimalista: mismo trazo, extremos redondeados y acento verde,
+   coherente con el logo QCheck y los demás iconos del sistema. */
+/* Mixer basado en el dibujo de Víctor: cabina clásica, tambor almendra
+   con bandas, tolva y canaleta atrás, tándem trasero, y el + sobre el
+   tambor. Trazo limpio del sistema, acento verde en el +. */
+/* Mixer con volumen: cuerpo en degradado metálico, tambor con espiral,
+   sombra de contacto y el + verde en relieve. Basado en el dibujo de Víctor. */
+const MIXER_SVG = `<svg class="mixer" viewBox="0 0 76 50" aria-hidden="true">
+  <defs>
+    <linearGradient id="mxDrum" x1="0" y1="0" x2=".35" y2="1">
+      <stop offset="0" stop-color="var(--mx-hi)"/><stop offset="1" stop-color="var(--mx-lo)"/>
+    </linearGradient>
+    <linearGradient id="mxCab" x1="0" y1="0" x2=".4" y2="1">
+      <stop offset="0" stop-color="var(--mx-hi)"/><stop offset="1" stop-color="var(--mx-mid)"/>
+    </linearGradient>
+    <linearGradient id="mxPlus" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8ef0b4"/><stop offset="1" stop-color="var(--ok)"/>
+    </linearGradient>
+    <radialGradient id="mxTyre" cx=".38" cy=".32" r=".8">
+      <stop offset="0" stop-color="var(--mx-mid)"/><stop offset="1" stop-color="var(--mx-tyre)"/>
+    </radialGradient>
+  </defs>
+
+  <!-- sombra de contacto -->
+  <ellipse cx="38" cy="45.6" rx="30" ry="2.6" fill="var(--mx-shadow)"/>
+
+  <!-- canaleta de descarga (detrás del tambor) -->
+  <path d="M55 20.5 L67.5 25.5 L64 32 L53.5 27 Z" fill="var(--mx-lo)"/>
+  <path d="M55 20.5 L67.5 25.5" stroke="var(--mx-edge)" stroke-width="1.1" opacity=".55" fill="none"/>
+
+  <!-- chasis -->
+  <rect x="8" y="31.5" width="52" height="3.6" rx="1.8" fill="var(--mx-lo)"/>
+  <rect x="24" y="35.2" width="10" height="4.6" rx="2.3" fill="var(--mx-mid)" opacity=".85"/>
+
+  <!-- pedestal del tambor -->
+  <path d="M26.5 33 L28.5 23 L32 23.6 L30 33.4 Z" fill="var(--mx-mid)"/>
+
+  <!-- tambor -->
+  <g transform="rotate(-7 43 17)">
+    <ellipse cx="43" cy="17" rx="18.5" ry="12.8" fill="url(#mxDrum)"/>
+    <path d="M43 4.2a18.5 12.8 0 0 1 17.6 8" fill="none" stroke="var(--mx-edge)" stroke-width="1.5" stroke-linecap="round" opacity=".75"/>
+    <path d="M33 6.4 C28.6 10.4 27.6 22 31.4 27.2" fill="none" stroke="var(--mx-band)" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>
+    <path d="M54.5 6.8 C58.6 11 58.8 22.4 55 27.6" fill="none" stroke="var(--mx-band)" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>
+  </g>
+
+  <!-- cabina -->
+  <path d="M8 33V21.2a2.2 2.2 0 0 1 2.2-2.2h3.4v-6.4a2.2 2.2 0 0 1 2.2-2.2h9.4V33z" fill="url(#mxCab)"/>
+  <path d="M17 12.6h6.4a1 1 0 0 1 1 1v5.2h-7.4z" fill="var(--mx-glass)"/>
+  <rect x="6.2" y="27.6" width="3.4" height="4" rx="1.2" fill="var(--mx-mid)"/>
+
+  <!-- ruedas -->
+  <g>
+    <circle cx="16" cy="37.4" r="5.2" fill="url(#mxTyre)"/><circle cx="16" cy="37.4" r="1.9" fill="var(--mx-hub)"/>
+    <circle cx="43" cy="37.4" r="5.2" fill="url(#mxTyre)"/><circle cx="43" cy="37.4" r="1.9" fill="var(--mx-hub)"/>
+    <circle cx="55" cy="37.4" r="5.2" fill="url(#mxTyre)"/><circle cx="55" cy="37.4" r="1.9" fill="var(--mx-hub)"/>
+  </g>
+
+  <!-- insignia + (esquina superior del tambor) -->
+  <g>
+    <circle cx="57.5" cy="8.5" r="9.4" fill="var(--mx-glow)"/>
+    <circle cx="57.5" cy="8.5" r="7.4" fill="url(#mxPlus)"/>
+    <circle cx="57.5" cy="8.5" r="7.4" fill="none" stroke="rgba(255,255,255,.45)" stroke-width=".9"/>
+    <path d="M57.5 4.6v7.8M53.6 8.5h7.8" stroke="var(--bg)" stroke-width="2.7" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>`;
+
+const INTAKE_KEY = "qc-intake-pref";
+let intakePref = localStorage.getItem(INTAKE_KEY) || null;   // 'scan' | 'manual' | null
+let rememberOn = false;
+
+function intakeLabel() {
+  if (intakePref === "scan") return "escanear QR";
+  if (intakePref === "manual") return "entrada manual";
+  return "escanear o manual";
+}
+function openSheet(id) { document.getElementById(id).classList.add("show"); }
+function closeSheet(id) { document.getElementById(id).classList.remove("show"); }
+
+/* iPhone/iPad: Safari no trae lector nativo de QR (BarcodeDetector).
+   Se detecta y se guía al usuario a la foto del conduce o a la entrada manual. */
+const CAN_SCAN = "BarcodeDetector" in window;
+
+function newTruck() {
+  if (intakePref === "scan" && CAN_SCAN) return openScan();
+  if (intakePref === "manual") return openManual();
+  rememberOn = false;
+  paintRemember();
+  const note = document.getElementById("scan-support");
+  if (!CAN_SCAN) {
+    note.style.display = "block";
+    note.innerHTML = "⚠ Este dispositivo no lee QR desde el navegador — use <b>Foto del conduce</b> o <b>Entrada manual</b>.";
+  } else note.style.display = "none";
+  openSheet("intake");
+}
+
+/* ---------- foto del conduce (funciona en iPhone/iPad) ---------- */
+function photoIntake(input) {
+  const file = input.files && input.files[0];
+  input.value = "";
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement("canvas");
+    const scale = Math.min(1, 1400 / img.width);
+    c.width = Math.round(img.width * scale);
+    c.height = Math.round(img.height * scale);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    pendingPhoto = c.toDataURL("image/jpeg", 0.72);
+    URL.revokeObjectURL(img.src);
+    if (rememberOn) { intakePref = "manual"; localStorage.setItem(INTAKE_KEY, "manual"); }
+    closeSheet("intake");
+    openManual();
+    document.getElementById("m-photo").innerHTML =
+      `<img src="${pendingPhoto}" style="height:9vh;border-radius:10px;border:2px solid var(--ok)">
+       <span style="font-size:1.5vh;color:var(--ok);font-weight:800;letter-spacing:.14em">📎 CONDUCE ADJUNTO</span>`;
+    toast("Foto adjunta — confirme el ticket");
+  };
+  img.src = URL.createObjectURL(file);
+}
+let pendingPhoto = null;
+function toggleRemember() { rememberOn = !rememberOn; paintRemember(); }
+function paintRemember() {
+  const el = document.getElementById("remember");
+  el.classList.toggle("on", rememberOn);
+  document.getElementById("remember-box").textContent = rememberOn ? "✓" : "";
+}
+function chooseIntake(mode) {
+  if (rememberOn) { intakePref = mode; localStorage.setItem(INTAKE_KEY, mode); }
+  closeSheet("intake");
+  mode === "scan" ? openScan() : openManual();
+}
+function resetIntakePref() {
+  intakePref = null; localStorage.removeItem(INTAKE_KEY);
+  stopScan(); closeSheet("scan"); closeSheet("manual");
+  toast("Volverá a preguntar el método");
+  render();
+}
+
+/* ---------- escanear QR ---------- */
+let scanStream = null, scanTimer = null;
+async function openScan() {
+  openSheet("scan");
+  const sub = document.getElementById("scan-sub");
+  if (!("BarcodeDetector" in window)) {
+    sub.textContent = "Este navegador no lee QR — use entrada manual.";
+    return;
+  }
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+  } catch (e) { sub.textContent = "No se pudo abrir la cámara: " + e.message; return; }
+  const video = document.getElementById("scan-video");
+  video.srcObject = scanStream; await video.play();
+  const det = new BarcodeDetector({ formats: ["qr_code", "code_128", "code_39"] });
+  scanTimer = setInterval(async () => {
+    try {
+      const codes = await det.detect(video);
+      if (codes.length) { stopScan(); closeSheet("scan"); applyScan(codes[0].rawValue); }
+    } catch (_) {}
+  }, 380);
+}
+function stopScan() {
+  if (scanTimer) clearInterval(scanTimer);
+  if (scanStream) scanStream.getTracks().forEach((t) => t.stop());
+  scanTimer = scanStream = null;
+}
+function applyScan(raw) {
+  let d = {};
+  try { d = JSON.parse(raw); } catch (_) {
+    const p = raw.split(/[;|,]/).map((s) => s.trim());
+    d = { ticket: p[0], truck: p[1], vol: p[2], batch: p[3], company: p[4], plant: p[5] };
+  }
+  if (!d.ticket) { toast("QR no reconocido — use entrada manual"); openManual(); return; }
+  createConduce({
+    ticket: String(d.ticket), truck: d.truck || null, vol: num(d.vol) ?? 10,
+    company: d.company || null, plant: d.plant || null,
+    batch: /^\d{1,2}:\d{2}$/.test(String(d.batch || "")) ? String(d.batch).padStart(5, "0") : null,
+    ident: d.ident || null, source: "qr",
+  });
+}
+
+/* ---------- entrada manual ---------- */
+function openManual() {
+  const last = testsOfDate(state.day).slice(-1)[0];
+  document.getElementById("m-ticket").value = "";
+  document.getElementById("m-truck").value = "";
+  document.getElementById("m-vol").value = "10";
+  document.getElementById("m-company").value = last ? (last.company || "") : "";
+  document.getElementById("m-plant").value = last ? (last.plant || "") : "";
+  document.getElementById("m-batch").value = "";
+  document.getElementById("m-ident").value = "";
+  if (!pendingPhoto) document.getElementById("m-photo").innerHTML = "";
+  openSheet("manual");
+  setTimeout(() => document.getElementById("m-ticket").focus(), 120);
+}
+function saveManual() {
+  const ticket = document.getElementById("m-ticket").value.trim();
+  if (!ticket) { toast("Falta el número de ticket"); document.getElementById("m-ticket").focus(); return; }
+  createConduce({
+    ticket,
+    truck: document.getElementById("m-truck").value.trim() || null,
+    vol: num(document.getElementById("m-vol").value) ?? 10,
+    company: document.getElementById("m-company").value.trim() || null,
+    plant: document.getElementById("m-plant").value.trim() || null,
+    batch: document.getElementById("m-batch").value || null,
+    ident: document.getElementById("m-ident").value.trim() || null,
+    source: pendingPhoto ? "foto" : "manual",
+    photo: pendingPhoto,
+  });
+  pendingPhoto = null;
+  document.getElementById("m-photo").innerHTML = "";
+  closeSheet("manual");
+}
+
+/* Crea el record del conduce (clave: compañía + ticket) y lo deja listo para probar */
+function createConduce(d) {
+  const company = d.company || plantCompany(d.plant) || "—";
+  const dup = findConduce(company, d.ticket);
+  if (dup) { toast(`Ticket ${d.ticket} ya registrado — abriendo`); pickTruck(dup.n); return; }
+  const t = {
+    n: nextTestN(), id: uid(), date: todayISO(),
+    ticket: d.ticket, truck: d.truck, vol: d.vol, company, plant: d.plant,
+    batch: d.batch, arrive: nowHM(), ident: d.ident,
+    uwTarget: db.plan.uw.target, rejected: false, source: d.source,
+  };
+  if (d.photo) t.photo = d.photo;   // evidencia del conduce en papel
+  db.tests.push(t); saveDB();
+  snd.truck();
+  pickTruck(t.n);
+  toast(`Camión ${t.truck || ""} · ticket ${t.ticket} registrado`);
+}
+
+function nextField() {
+  const i = FIELDS.findIndex((f) => f.key === state.field);
+  state.field = FIELDS[(i + 1) % FIELDS.length].key;
+  state._typing = null; state._str = "";
+  render();
+}
+
+/* ---------- submit ---------- */
+function askSubmit() {
+  const v = liveVerdict();
+  if (!v.ready) return;
+  if (v.bad) {
+    const t = currentTest();
+    document.getElementById("confirm-txt").innerHTML =
+      `Camión <b>${esc(t.truck || "—")}</b>, ticket <b>${esc(t.ticket || "—")}</b>.<br>
+       El Field Display anunciará RECHAZADO y se notificará a todas las partes.`;
+    document.getElementById("confirm").classList.add("show");
+  } else doSubmit(false);
+}
+function closeConfirm() { document.getElementById("confirm").classList.remove("show"); }
+
+function doSubmit(rejected) {
+  closeConfirm();
+  const t = currentTest(); if (!t) return;
+  t.slump = state.buf.slump; t.uw = state.buf.uw;
+  t.air = state.buf.air; t.temp = state.buf.temp;
+  if (!t.testTime) t.testTime = nowHM();
+  t.rejected = !!rejected;
+  t.resultsAt = nowHM();          // dispara el anuncio en el Field Display
+  saveDB();
+  rejected ? snd.bad() : snd.ok();
+  toast(rejected ? `Camión ${t.truck || ""} RECHAZADO` : `Resultados enviados · camión ${t.truck || ""}`);
+  // pasar al próximo camión pendiente
+  const pend = pendingTrucks(state.day);
+  if (pend.length) pickTruck(pend[pend.length - 1].n);
+  else render();
+}
+
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("show"), 2400);
+}
+
+loadDB();
+initTheme("dark");
+enableLiveSync(() => render());
+render();
+</script>
+</body>
+</html>

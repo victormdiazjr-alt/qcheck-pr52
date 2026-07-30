@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contratista — QCheck PR-52</title>
+<link rel="stylesheet" href="qc.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%2396c93d'/><text x='50' y='70' font-size='52' text-anchor='middle' fill='%230a0d12'>▲</text></svg>">
+<style>
+/* Contratista — se consulta en el teléfono, durante el tiro.
+   Rubén: yardas, losas, camiones esperando, y "todo en cumplimiento". */
+body { background: var(--bg); }
+.c-hero {
+  background: linear-gradient(125deg, #12263a 0%, #1d4a6e 60%, #2b7a5b 100%);
+  color: #fff; border-radius: 16px; padding: 20px 22px; margin-bottom: 16px;
+  box-shadow: 0 8px 28px rgba(10,30,50,.28);
+}
+.c-hero .eyebrow { font-size: 11px; letter-spacing: .26em; text-transform: uppercase; color: #a9cfe8; font-weight: 800; }
+.c-hero h1 { font-size: 21px; margin: 5px 0 2px; }
+.c-hero .sub { font-size: 13px; color: #bcd8ea; }
+.c-hero select {
+  margin-top: 12px; padding: 8px 11px; border-radius: 9px; border: none;
+  font-size: 14px; font-weight: 700; background: rgba(255,255,255,.93);
+}
+/* barra de progreso grande */
+.prog-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; margin-bottom: 16px; }
+.prog-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.prog-row .big { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.prog-row .of { font-size: 15px; color: var(--ink-soft); font-weight: 600; }
+.prog-row .pct { margin-left: auto; font-size: 26px; font-weight: 800; color: var(--accent); }
+.bar { height: 16px; border-radius: 999px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--line); }
+.bar > i { display: block; height: 100%; background: linear-gradient(90deg, #2b7a5b, #4fc287); }
+.bar.slabs > i { background: linear-gradient(90deg, #1d4a6e, #4a90c8); }
+.prog-note { font-size: 12.5px; color: var(--ink-soft); margin-top: 7px; }
+/* cumplimiento */
+.comp {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; border: 2px solid;
+}
+.comp.ok { background: var(--ok-bg); border-color: var(--ok); }
+.comp.act { background: var(--act-bg); border-color: var(--act); }
+.comp.susp { background: var(--susp-bg); border-color: var(--susp); }
+.comp .mark { font-size: 34px; line-height: 1; }
+.comp .t { font-size: 19px; font-weight: 800; }
+.comp .s { font-size: 13px; color: var(--ink-soft); }
+.comp.ok .t { color: var(--ok); } .comp.act .t { color: var(--act); } .comp.susp .t { color: var(--susp); }
+.comp .chips { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+/* camiones esperando */
+.wait-list { display: flex; gap: 10px; flex-wrap: wrap; }
+.wait-truck {
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 14px; text-align: center; min-width: 92px;
+}
+.wait-truck .n { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.wait-truck .m { font-size: 11.5px; color: var(--ink-soft); }
+.wait-truck.dis { border-color: var(--ok); background: var(--ok-bg); }
+</style>
+</head>
+<body>
+
+<header class="qc-header">
+  <div class="brand">
+    <a href="portal.html" style="text-decoration:none">
+      <svg style="height:34px;width:34px;display:block" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 69.7 93.6 A 40 40 0 1 1 95.85 59.49" fill="none" stroke="#7fa0ff" stroke-width="15"/>
+        <polyline points="62,64 86,82 114,46" fill="none" stroke="#96c93d" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+    <div>
+      <div class="title">Contratista — Estado del Tiro</div>
+      <div class="subtitle">Progreso · camiones · cumplimiento</div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <a class="btn small" style="margin:10px 0" href="display.html" target="_blank">🖥 Field Display</a>
+  </nav>
+</header>
+
+<main style="max-width:1000px">
+  <div class="c-hero">
+    <div class="eyebrow" id="hero-eyebrow">—</div>
+    <h1 id="hero-title">Estado del tiro</h1>
+    <div class="sub" id="hero-sub">—</div>
+    <select id="day-sel" onchange="state.day=this.value; render()"></select>
+  </div>
+  <div id="content"></div>
+</main>
+
+<div id="modal-root"></div>
+<div id="toast"></div>
+
+<script src="seed.js"></script>
+<script src="core.js"></script>
+<script>
+"use strict";
+const state = { day: null };
+
+function render() {
+  const days = testDates();
+  if (!state.day || !days.includes(state.day)) state.day = days[0];
+  const sel = document.getElementById("day-sel");
+  sel.innerHTML = days.map((d) => `<option value="${d}" ${d === state.day ? "selected" : ""}>${fmtDate(d)}</option>`).join("");
+
+  const p = dayProgress(state.day);
+  const meta = db.dayMeta[state.day] || {};
+  const alerts = trendAlerts(state.day);
+
+  document.getElementById("hero-eyebrow").textContent = db.project.contractor || "Contratista";
+  document.getElementById("hero-title").textContent = fmtDate(state.day);
+  document.getElementById("hero-sub").textContent =
+    [meta.fase ? "Fase " + meta.fase : null, meta.lane ? "Carril " + meta.lane : null,
+     meta.km ? "Km " + meta.km : null].filter(Boolean).join(" · ") || db.project.name;
+
+  // --- estado de cumplimiento (lo que el contratista necesita saber: todo bien o no) ---
+  const rows = testsOfDate(state.day);
+  const bad = rows.filter((t) => t.rejected || worstZone(t) === "susp").length;
+  const act = rows.filter((t) => !t.rejected && worstZone(t) === "act").length;
+  const compCls = bad ? "susp" : act ? "act" : "ok";
+  const compTxt = bad ? `${bad} camión(es) fuera de cumplimiento`
+                : act ? "En cumplimiento — con avisos de vigilancia"
+                : "Todo en cumplimiento";
+  const compMark = bad ? "✕" : act ? "▲" : "✓";
+  const last = rows[rows.length - 1];
+  const chip = (label, v, z, dp, u) => v == null ? "" :
+    `<span class="badge ${z === "susp" ? "susp" : z === "act" ? "act" : "ok"}">${label} ${fmt(v, dp)}${u}</span>`;
+
+  document.getElementById("content").innerHTML = `
+    <div class="comp ${compCls}">
+      <div class="mark" style="color:var(--${compCls === "susp" ? "susp" : compCls === "act" ? "act" : "ok"})">${compMark}</div>
+      <div>
+        <div class="t">${compTxt}</div>
+        <div class="s">${p.evaluated} pruebas evaluadas hoy${p.compliancePct != null ? " · " + fmt(p.compliancePct, 0) + "% conformes" : ""}</div>
+      </div>
+      ${last ? `<div class="chips">
+        ${chip("Slump", num(last.slump), zoneSlump(last), 2, '"')}
+        ${chip("UW", num(last.uw), zoneUW(last), 1, "")}
+        ${chip("Temp", num(last.temp), zoneTemp(last), 0, "°")}
+      </div>` : ""}
+    </div>
+
+    ${alerts.map((a) => `<div class="notice ${a.level}" style="display:flex;gap:10px;align-items:flex-start">
+      <span style="font-size:17px">${a.icon}</span>
+      <span><b>${esc(a.title)}</b> — ${esc(a.text)}<br><span class="muted">${esc(a.action)}</span></span>
+    </div>`).join("")}
+
+    <div class="prog-card">
+      <div class="prog-row">
+        <span class="big">${fmt(p.placed, 1)}</span><span class="of">CY colocadas</span>
+        ${p.cyPlan ? `<span class="of">· faltan <b>${fmt(p.pending, 1)}</b> de ${fmt(p.cyPlan, 0)}</span>` : ""}
+        ${p.pct != null ? `<span class="pct">${fmt(p.pct, 0)}%</span>` : ""}
+      </div>
+      <div class="bar"><i style="width:${p.pct != null ? p.pct : 0}%"></i></div>
+      <div class="prog-note">${p.loads} camiones recibidos${p.rejected ? ` · ${p.rejected} rechazado(s)` : ""}${!p.cyPlan ? " · <b>defina las yardas planificadas</b> para ver el progreso" : ""}</div>
+    </div>
+
+    <div class="prog-card">
+      <div class="prog-row">
+        <span class="big">${p.losasDone}</span><span class="of">losas vaciadas</span>
+        ${p.losasPlan ? `<span class="of">· faltan <b>${Math.max(0, p.losasPlan - p.losasDone)}</b> de ${p.losasPlan}</span>` : ""}
+        ${p.losasPct != null ? `<span class="pct">${fmt(p.losasPct, 0)}%</span>` : ""}
+      </div>
+      <div class="bar slabs"><i style="width:${p.losasPct != null ? p.losasPct : 0}%"></i></div>
+      <div class="prog-note">${p.losasPlan ? "" : "<b>Defina cuántas losas se tiran hoy</b> para ver el progreso · "}Conteo por identificación de losa en los camiones descargados</div>
+    </div>
+
+    <div class="grid cols-3" style="margin-bottom:16px">
+      <div class="stat ${p.waiting.length > 2 ? "alert" : ""}">
+        <div class="label">Camiones esperando</div>
+        <div class="value">${p.waiting.length}</div>
+        <div class="sub">${fmt(p.waitingCY, 1)} CY en espera</div></div>
+      <div class="stat good"><div class="label">Descargando</div>
+        <div class="value">${p.discharging.length}</div>
+        <div class="sub">ahora mismo</div></div>
+      <div class="stat ${p.rejected ? "alert" : "good"}"><div class="label">Rechazados</div>
+        <div class="value">${p.rejected}</div>
+        <div class="sub">hoy</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Camiones en sitio</h2><div class="spacer"></div>
+        <button class="btn small" onclick="formDayPlan()">Plan del día</button></div>
+      <div class="panel-body">
+        ${p.waiting.length || p.discharging.length ? `<div class="wait-list">
+          ${p.waiting.map((t) => {
+            const dis = t.start && !t.end;
+            return `<div class="wait-truck ${dis ? "dis" : ""}">
+              <div class="n">${esc(t.truck || "—")}</div>
+              <div class="m">${fmt(num(t.vol), 1)} CY</div>
+              <div class="m">${dis ? "descargando" : "llegó " + esc(t.arrive || "—")}</div>
+            </div>`;
+          }).join("")}
+        </div>` : `<div class="empty">Ningún camión en sitio.</div>`}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Últimos camiones</h2></div>
+      <div class="panel-body flush"><div class="table-wrap"><table class="data">
+        <tr><th>Camión</th><th>Ticket</th><th>Losa</th><th class="num">CY</th><th>Llegó</th><th>Estado</th></tr>
+        ${rows.slice(-10).reverse().map((t) => `<tr class="${t.rejected ? "rejected" : ""}">
+          <td class="mono"><b>${esc(t.truck || "—")}</b></td>
+          <td class="mono">${esc(t.ticket || "—")}</td>
+          <td style="white-space:normal;font-size:12px">${esc(shortIdent(t.ident))}</td>
+          <td class="num mono">${fmt(num(t.vol), 1)}</td>
+          <td class="mono">${esc(t.arrive || "—")}</td>
+          <td>${estadoBadge(t)}</td>
+        </tr>`).join("") || `<tr><td colspan="6" class="empty">Sin camiones.</td></tr>`}
+      </table></div></div>
+    </div>`;
+}
+
+function formDayPlan() {
+  const meta = db.dayMeta[state.day] || {};
+  openForm({
+    title: `Plan del día — ${fmtDate(state.day)}`,
+    initial: meta,
+    fields: [
+      { key: "losasPlan", label: "Losas a tirar hoy", type: "number", step: "1", hint: "Ej. 23" },
+      { key: "cyPlan", label: "Yardas planificadas (CY)", type: "number", step: "5" },
+      { key: "fase", label: "Fase" },
+      { key: "lane", label: "Carril" },
+      { key: "cierre", label: "Cierre" },
+      { key: "km", label: "Km", half: true },
+    ],
+    onSave: (v) => {
+      db.dayMeta[state.day] = { ...(db.dayMeta[state.day] || {}), ...v };
+      saveDB(); render(); toast("Plan del día guardado");
+    },
+  });
+}
+
+loadDB();
+initTheme();
+mountThemeToggle();
+enableLiveSync(() => render());
+render();
+</script>
+</body>
+</html>

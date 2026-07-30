@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conduce — QC PR-52</title>
+<link rel="stylesheet" href="qc.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23e8710a'/><text x='50' y='70' font-size='52' text-anchor='middle' fill='white'>▤</text></svg>">
+<style>
+/* Conduce entry — field data-entry person. Mobile-first, glove-friendly. */
+body { background: var(--bg); }
+.entry-hero {
+  background: linear-gradient(135deg, #122c42 0%, #0f6db4 100%);
+  color: #fff; border-radius: 14px; padding: 18px 20px; margin-bottom: 16px;
+  box-shadow: 0 6px 24px rgba(15,40,70,.25);
+}
+.entry-hero h1 { margin: 0 0 2px; font-size: 21px; }
+.entry-hero .sub { color: #bcd4e8; font-size: 13px; }
+.capture-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 640px) { .capture-row { grid-template-columns: 1fr; } }
+.cap-btn {
+  border: 2px dashed #9fb4c6; border-radius: 14px; background: var(--panel);
+  padding: 18px 12px; text-align: center; cursor: pointer; font-family: inherit;
+}
+.cap-btn:hover { border-color: var(--accent); background: var(--hover); }
+.cap-btn .ico { font-size: 34px; display: block; margin-bottom: 6px; }
+.cap-btn .t { font-weight: 800; font-size: 15px; }
+.cap-btn .d { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+.big-form .field input { padding: 13px 12px; font-size: 18px; font-weight: 600; }
+.big-form .field label { font-size: 11.5px; }
+.now-btn {
+  border: 1px solid var(--line); background: var(--panel-2); border-radius: 7px;
+  font-size: 12px; font-weight: 700; padding: 4px 10px; cursor: pointer; margin-top: 4px;
+}
+.now-btn:hover { background: var(--hover); }
+.truck-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 16px; border-bottom: 1px solid var(--line);
+}
+.truck-row .tno { font-size: 22px; font-weight: 900; min-width: 56px; }
+.truck-row .meta { font-size: 12.5px; color: var(--ink-soft); }
+.tstep {
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+  font-size: 12.5px; font-weight: 700; padding: 8px 12px; cursor: pointer;
+}
+.tstep:hover { background: var(--hover); }
+.tstep.done { background: var(--ok-bg); color: var(--ok); border-color: #bfe3cb; cursor: default; }
+#video-wrap { position: relative; border-radius: 12px; overflow: hidden; background: #000; margin-bottom: 14px; display: none; }
+#video-wrap video { width: 100%; display: block; max-height: 46vh; object-fit: cover; }
+#video-wrap .scan-frame {
+  position: absolute; inset: 12% 18%; border: 3px solid rgba(255,255,255,.85); border-radius: 14px;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,.35);
+}
+#video-wrap .close-scan { position: absolute; top: 10px; right: 10px; }
+.photo-chip { height: 42px; border-radius: 6px; border: 1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<header class="qc-header">
+  <div class="brand">
+    <a href="portal.html" style="text-decoration:none"><span class="logo">QC</span></a>
+    <div>
+      <div class="title">Conduce — Entrada de Campo</div>
+      <div class="subtitle">Escanee o registre cada camión al llegar</div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <a class="btn small" style="margin:10px 0" href="display.html" target="_blank">🖥 Field Display</a>
+  </nav>
+</header>
+
+<main style="max-width:900px">
+  <div class="entry-hero">
+    <h1 id="hero-day">Vaciado de hoy</h1>
+    <div class="sub" id="hero-sub">—</div>
+  </div>
+
+  <div id="video-wrap">
+    <video id="scan-video" playsinline muted></video>
+    <div class="scan-frame"></div>
+    <button class="btn small close-scan" onclick="stopScan()">✕ Cerrar</button>
+  </div>
+
+  <div class="capture-row">
+    <button class="cap-btn" onclick="startScan()">
+      <span class="ico">🔳</span><span class="t">Escanear QR</span>
+      <span class="d">QR del conduce de la planta — datos automáticos</span>
+    </button>
+    <label class="cap-btn">
+      <span class="ico">📸</span><span class="t">Foto del conduce</span>
+      <span class="d">Se guarda como evidencia adjunta al camión</span>
+      <input type="file" accept="image/*" capture="environment" style="display:none" onchange="photoCapture(this)">
+    </label>
+    <button class="cap-btn" onclick="document.getElementById('manual-card').scrollIntoView({behavior:'smooth'}); document.querySelector('#f-ticket').focus()">
+      <span class="ico">⌨️</span><span class="t">Entrada manual</span>
+      <span class="d">Si no se puede escanear</span>
+    </button>
+  </div>
+
+  <div class="panel" id="manual-card">
+    <div class="panel-head"><h2>Registrar llegada de camión</h2><div class="spacer"></div>
+      <span class="badge info" id="next-load">—</span></div>
+    <div class="panel-body big-form">
+      <div class="form-grid">
+        <div class="field"><label>Ticket / Conduce *</label><input id="f-ticket" inputmode="numeric" placeholder="66861"></div>
+        <div class="field"><label>Camión</label><input id="f-truck" inputmode="numeric" placeholder="102"></div>
+        <div class="field"><label>Volumen (CY)</label><input id="f-vol" inputmode="decimal" value="10"></div>
+        <div class="field"><label>Hora batch (del conduce)</label><input id="f-batch" type="time">
+          <button class="now-btn" onclick="setNow('f-batch')">AHORA</button></div>
+        <div class="field"><label>Llegada</label><input id="f-arrive" type="time">
+          <button class="now-btn" onclick="setNow('f-arrive')">AHORA</button></div>
+        <div class="field"><label>Losa / Identificación</label><input id="f-ident" placeholder="L3-0.443"></div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:14px; align-items:center">
+        <span id="photo-slot"></span>
+        <div style="flex:1"></div>
+        <button class="btn orange" style="font-size:16px; padding:12px 26px" onclick="saveArrival()">✔ Registrar llegada</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Camiones de hoy</h2><div class="spacer"></div>
+      <span class="muted" id="day-tot" style="font-size:12.5px">—</span></div>
+    <div class="panel-body flush" id="truck-list"></div>
+  </div>
+
+  <p class="muted" style="font-size:12px">
+    Formato QR esperado: <code>ticket;camion;cy;horaBatch</code> (también acepta JSON
+    <code>{"ticket":"…","truck":"…","vol":10,"batch":"10:35"}</code>). La foto del conduce se guarda
+    como evidencia — la lectura automática por foto (OCR) llega en la próxima versión.
+  </p>
+</main>
+
+<div id="modal-root"></div>
+<div id="toast"></div>
+
+<script src="seed.js"></script>
+<script src="core.js"></script>
+<script>
+"use strict";
+const state = { day: todayISO() };
+let pendingPhoto = null;
+let scanStream = null, scanTimer = null;
+
+function setNow(id) { document.getElementById(id).value = nowHM(); }
+
+/* ---------- QR scan (BarcodeDetector + camera) ---------- */
+async function startScan() {
+  const wrap = document.getElementById("video-wrap");
+  if (!("BarcodeDetector" in window)) {
+    alert("Este navegador no soporta lectura de QR nativa (use Chrome/Edge en Android, o Safari 17+). Use entrada manual o foto.");
+    return;
+  }
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+  } catch (e) {
+    alert("No se pudo abrir la cámara: " + e.message);
+    return;
+  }
+  const video = document.getElementById("scan-video");
+  video.srcObject = scanStream;
+  await video.play();
+  wrap.style.display = "block";
+  const detector = new BarcodeDetector({ formats: ["qr_code", "code_128", "code_39"] });
+  scanTimer = setInterval(async () => {
+    try {
+      const codes = await detector.detect(video);
+      if (codes.length) { applyScan(codes[0].rawValue); stopScan(); }
+    } catch (_) {}
+  }, 400);
+}
+function stopScan() {
+  if (scanTimer) clearInterval(scanTimer);
+  if (scanStream) scanStream.getTracks().forEach((t) => t.stop());
+  scanTimer = scanStream = null;
+  document.getElementById("video-wrap").style.display = "none";
+}
+function applyScan(raw) {
+  let d = {};
+  try { d = JSON.parse(raw); } catch (_) {
+    const parts = raw.split(/[;|,]/).map((s) => s.trim());
+    d = { ticket: parts[0], truck: parts[1], vol: parts[2], batch: parts[3] };
+  }
+  if (d.ticket) document.getElementById("f-ticket").value = d.ticket;
+  if (d.truck) document.getElementById("f-truck").value = d.truck;
+  if (d.vol) document.getElementById("f-vol").value = d.vol;
+  if (d.batch && /^\d{1,2}:\d{2}$/.test(String(d.batch))) document.getElementById("f-batch").value = String(d.batch).padStart(5, "0");
+  document.getElementById("f-arrive").value = nowHM();
+  toast("Conduce escaneado — verifique y registre");
+}
+
+/* ---------- photo evidence ---------- */
+function photoCapture(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement("canvas");
+    const scale = Math.min(1, 900 / img.width);
+    c.width = Math.round(img.width * scale);
+    c.height = Math.round(img.height * scale);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    pendingPhoto = c.toDataURL("image/jpeg", 0.6);
+    document.getElementById("photo-slot").innerHTML =
+      `<img class="photo-chip" src="${pendingPhoto}"> <span class="muted" style="font-size:12px">foto adjunta</span>`;
+    document.getElementById("f-arrive").value = document.getElementById("f-arrive").value || nowHM();
+    toast("Foto del conduce adjuntada");
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(file);
+  input.value = "";
+}
+
+/* ---------- save arrival ---------- */
+function saveArrival() {
+  const ticket = document.getElementById("f-ticket").value.trim();
+  if (!ticket) { toast("Falta el número de ticket"); document.getElementById("f-ticket").focus(); return; }
+  const t = {
+    n: nextTestN(), id: uid(),
+    date: todayISO(),
+    ticket,
+    truck: document.getElementById("f-truck").value.trim() || null,
+    vol: num(document.getElementById("f-vol").value),
+    plant: "01-SAN JUAN",
+    batch: document.getElementById("f-batch").value || null,
+    arrive: document.getElementById("f-arrive").value || nowHM(),
+    ident: document.getElementById("f-ident").value.trim() || null,
+    uwTarget: db.plan.uw.target,
+    rejected: false,
+  };
+  if (pendingPhoto) t.photo = pendingPhoto;
+  db.tests.push(t);
+  saveDB();
+  pendingPhoto = null;
+  document.getElementById("photo-slot").innerHTML = "";
+  ["f-ticket", "f-truck", "f-ident", "f-batch", "f-arrive"].forEach((id) => document.getElementById(id).value = "");
+  document.getElementById("f-vol").value = "10";
+  render();
+  toast(`Camión ${t.truck || ""} ticket ${t.ticket} registrado`);
+}
+
+/* ---------- one-tap timestamps + results ---------- */
+function stamp(n, field) {
+  const t = db.tests.find((x) => x.n === n);
+  if (!t || t[field]) return;
+  t[field] = nowHM();
+  saveDB(); render();
+  toast({ start: "Comienza vaciado", testTime: "Toma de muestra", end: "Termina vaciado" }[field] + " — " + t[field]);
+}
+
+function render() {
+  const day = todayISO();
+  const days = testDates();
+  const shown = testsOfDate(day).length ? day : days[0];
+  const rows = testsOfDate(shown);
+  const cy = rows.reduce((a, t) => a + (num(t.vol) || 0), 0);
+  document.getElementById("hero-day").textContent = shown === day ? "Vaciado de hoy — " + fmtDate(shown) : "Último vaciado — " + fmtDate(shown);
+  document.getElementById("hero-sub").textContent = db.project.name + " · " + db.project.mixId;
+  document.getElementById("next-load").textContent = "Load #" + (testsOfDate(day).length + 1) + " de hoy";
+  document.getElementById("day-tot").textContent = `${rows.length} camiones · ${fmt(cy, 1)} CY`;
+
+  document.getElementById("truck-list").innerHTML = rows.length ? [...rows].reverse().map((t) => {
+    const w = worstZone(t);
+    const step = (field, label) => t[field]
+      ? `<span class="tstep done">✓ ${label} ${t[field]}</span>`
+      : `<button class="tstep" onclick="stamp(${t.n},'${field}')">${label} — AHORA</button>`;
+    return `<div class="truck-row ${t.rejected ? "rejected" : ""}">
+      <div class="tno">${esc(t.truck || "—")}</div>
+      <div style="min-width:130px">
+        <div><b>Ticket ${esc(t.ticket || "—")}</b> ${t.photo ? "📎" : ""}</div>
+        <div class="meta">${fmt(t.vol, 1)} CY · llegó ${esc(t.arrive || "—")}${t.ident ? " · " + esc(shortIdent(t.ident)) : ""}</div>
+      </div>
+      ${step("start", "▶ Comienza")}
+      ${step("testTime", "🧪 Muestra")}
+      ${step("end", "⏹ Termina")}
+      <button class="tstep" onclick="formTest(null,${t.n})" style="border-color:#9fc4e8; color:var(--info)">📋 Resultados</button>
+      <span style="margin-left:auto">${estadoBadge(t)}</span>
+    </div>`;
+  }).join("") : `<div class="empty">Ningún camión registrado hoy. Escanee el primer conduce al llegar.</div>`;
+}
+
+loadDB();
+initTheme();
+mountThemeToggle();
+enableLiveSync(render);
+render();
+</script>
+</body>
+</html>

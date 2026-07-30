@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Display — QC PR-52</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230a0d12'/><circle cx='50' cy='50' r='26' fill='none' stroke='%2334d27b' stroke-width='8'/></svg>">
+<style>
+/* ============================================================
+   PANTALLA DE CAMPO — elegant field display.
+   Legible in motion and from distance, but refined:
+   dark stage, ambient status glow, light-weight giant numerals,
+   hairline dividers. No sign panels, no heavy borders.
+   ============================================================ */
+:root {
+  --bg: #0a0d12;
+  --text: #eef2f6;
+  --muted: #77848f;
+  --hairline: rgba(255,255,255,.09);
+  --ok: #34d27b;
+  --act: #f5b83d;
+  --susp: #ff5a52;
+  --idle: #5b8dbf;
+  --logo-navy: #4a63d8; /* navy del logo, aclarado para fondo oscuro */
+}
+/* light theme — same layout, daylight palette */
+:root[data-theme="light"] {
+  --bg: #f2f4f7;
+  --text: #16222e;
+  --muted: #76838f;
+  --hairline: rgba(15,30,45,.11);
+  --ok: #0e9d55;
+  --act: #c8880a;
+  --susp: #e0362d;
+  --idle: #3d76ab;
+  --logo-navy: #2b3a8c;
+}
+:root[data-theme="light"] body.s-ok    { --glow: rgba(14,157,85,.13); }
+:root[data-theme="light"] body.s-act   { --glow: rgba(200,136,10,.12); }
+:root[data-theme="light"] body.s-susp  { --glow: rgba(224,54,45,.15); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+/* ---------- ambient status glow ---------- */
+#ambient {
+  position: fixed; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(1000px 520px at 72% 42%, var(--glow, rgba(91,141,191,.16)), transparent 65%),
+    radial-gradient(700px 400px at 8% 108%, rgba(91,141,191,.07), transparent 60%);
+  transition: background 1.2s ease;
+}
+body.s-ok    { --glow: rgba(52,210,123,.17); }
+body.s-act   { --glow: rgba(245,184,61,.15); }
+body.s-susp  { --glow: rgba(255,90,82,.20); }
+body.s-susp #ambient { animation: breathe 2.6s ease-in-out infinite; }
+@keyframes breathe { 0%,100% { opacity: .75; } 50% { opacity: 1; } }
+
+/* ---------- header ---------- */
+header {
+  display: flex; align-items: baseline; gap: 1.6vw;
+  padding: 3.2vh 3.4vw 0;
+  position: relative;
+}
+.brand-left { display: flex; align-items: center; gap: 1.3vw; }
+.qclogo { height: 9.5vh; width: auto; flex: none; filter: drop-shadow(0 0.3vh 1vh rgba(0,0,0,.25)); }
+.brand-name { font-size: 3vh; font-weight: 700; letter-spacing: .015em; }
+.meta-line { font-size: 1.9vh; color: var(--muted); font-weight: 500; letter-spacing: .12em; text-transform: uppercase; }
+.clock { margin-left: auto; text-align: right; line-height: 1; }
+.clock .hm { font-size: 6.6vh; font-weight: 200; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.clock .dt { font-size: 1.7vh; color: var(--muted); letter-spacing: .18em; text-transform: uppercase; margin-top: 0.9vh; font-weight: 600; }
+.clock .conn {
+  display: flex; justify-content: flex-end; align-items: center; gap: 0.6vw;
+  margin-top: 1.2vh;
+  font-size: 1.7vh; font-weight: 700; letter-spacing: .24em; text-transform: uppercase;
+  color: var(--ok);
+}
+.clock .conn i {
+  width: 1.2vh; height: 1.2vh; border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 1.6vh var(--ok);
+  animation: connpulse 1.8s ease-in-out infinite;
+}
+.clock .conn.off { color: var(--susp); }
+.clock .conn.off i { background: var(--susp); box-shadow: 0 0 1.6vh var(--susp); animation: none; }
+@keyframes connpulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* ---------- main stage ---------- */
+.stage {
+  flex: 1;
+  display: flex; align-items: center;
+  padding: 0 3.4vw;
+  gap: 4vw;
+  position: relative;
+}
+.truck { line-height: 0.92; }
+.truck .lbl {
+  font-size: 2vh; font-weight: 700; letter-spacing: .34em;
+  color: var(--muted); text-transform: uppercase; margin-bottom: 1.6vh;
+}
+.truck .num {
+  font-size: 30vh; font-weight: 250; letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+.truck .sub {
+  font-size: 2.4vh; color: var(--muted); font-weight: 500;
+  letter-spacing: .06em; margin-top: 1.8vh;
+}
+.truck .sub b { color: var(--text); font-weight: 650; }
+.truck .plant {
+  font-size: 2vh; font-weight: 700; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--muted); margin-top: 1.4vh;
+  display: flex; align-items: center; gap: 0.7vw;
+}
+.truck .plant i {
+  width: 1.1vh; height: 1.1vh; border-radius: 50%;
+  background: var(--idle); box-shadow: 0 0 1.2vh var(--idle);
+}
+
+.verdict { margin-left: auto; text-align: right; }
+.verdict .ring {
+  width: 17vh; height: 17vh; margin-left: auto;
+  border-radius: 50%;
+  border: 0.9vh solid var(--vc, var(--idle));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8.5vh; font-weight: 300;
+  color: var(--vc, var(--idle));
+  box-shadow: 0 0 6vh -1vh var(--vc, transparent);
+  margin-bottom: 2.6vh;
+}
+.verdict .word {
+  font-size: 6vh; font-weight: 650; letter-spacing: .04em;
+  color: var(--vc, var(--text));
+}
+.verdict .note {
+  font-size: 2.1vh; color: var(--muted); font-weight: 600;
+  letter-spacing: .22em; text-transform: uppercase; margin-top: 1vh;
+}
+.v-ok   { --vc: var(--ok); }
+.v-act  { --vc: var(--act); }
+.v-susp { --vc: var(--susp); }
+.v-idle { --vc: var(--idle); }
+
+/* ---------- indicators ---------- */
+.indics {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  padding: 0 3.4vw;
+  border-top: 1px solid var(--hairline);
+}
+.cell {
+  padding: 3vh 0 3.2vh;
+  text-align: center;
+  position: relative;
+}
+.cell + .cell::before {
+  content: ""; position: absolute; left: 0; top: 22%; bottom: 22%;
+  width: 1px; background: var(--hairline);
+}
+.cell .k {
+  font-size: 1.8vh; font-weight: 700; letter-spacing: .26em;
+  color: var(--muted); text-transform: uppercase;
+  display: flex; align-items: center; justify-content: center; gap: 0.6vw;
+}
+.cell .k i {
+  width: 1.1vh; height: 1.1vh; border-radius: 50%;
+  background: var(--dc, transparent);
+  box-shadow: 0 0 1.4vh var(--dc, transparent);
+}
+.cell .v {
+  font-size: 9.5vh; font-weight: 200; font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em; line-height: 1.12;
+}
+.cell .u { font-size: 1.8vh; color: var(--muted); font-weight: 600; letter-spacing: .2em; }
+/* proximity to limits: number takes the color and the glow;
+   far from limits = clean white, no glow, no dot */
+.cell.p-amber { --dc: var(--act); }
+.cell.p-amber .v { color: var(--act); font-weight: 300; text-shadow: 0 0 3.2vh rgba(245,184,61,.45); }
+.cell.p-red { --dc: var(--susp); }
+.cell.p-red .v { color: var(--susp); font-weight: 300; text-shadow: 0 0 3.2vh rgba(255,90,82,.55); animation: numbreathe 2.2s ease-in-out infinite; }
+@keyframes numbreathe { 0%,100% { text-shadow: 0 0 2.2vh rgba(255,90,82,.35); } 50% { text-shadow: 0 0 4.2vh rgba(255,90,82,.7); } }
+
+/* ---------- footer totals ---------- */
+footer {
+  display: flex; align-items: baseline; gap: 5vw;
+  padding: 2.6vh 3.4vw 3.2vh;
+  border-top: 1px solid var(--hairline);
+}
+.tot { display: flex; align-items: baseline; gap: 1vw; }
+.tot .k { font-size: 1.8vh; font-weight: 700; letter-spacing: .26em; color: var(--muted); text-transform: uppercase; }
+.tot .v { font-size: 5.4vh; font-weight: 250; font-variant-numeric: tabular-nums; }
+.tot .u { font-size: 1.9vh; color: var(--muted); font-weight: 600; }
+.tot.warn .v { color: var(--susp); font-weight: 350; }
+.theme-toggle, .sound-toggle {
+  position: fixed; bottom: 2vh; right: 1.2vw; z-index: 300;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+  width: 6.4vh; height: 6.4vh; border-radius: 50%;
+  border: 0.35vh solid var(--muted);
+  background: rgba(127,138,148,.16);
+  color: var(--text);
+  font-size: 3vh; line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 0.4vh 1.8vh rgba(0,0,0,.35);
+  transition: transform .15s, border-color .15s;
+}
+.theme-toggle:hover, .sound-toggle:hover { transform: scale(1.1); border-color: var(--text); }
+.sound-toggle { right: calc(1.2vw + 8vh); }
+.sound-toggle.muted { opacity: .55; border-style: dashed; }
+
+/* ---------- overlay de inicio (simulación) ---------- */
+#sim-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: radial-gradient(900px 500px at 50% 38%, rgba(74,99,216,.14), transparent 65%), var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2.2vh; cursor: pointer;
+}
+#sim-overlay .ol-title { font-size: 4.6vh; font-weight: 750; letter-spacing: .02em; }
+#sim-overlay .ol-brand { font-size: 2.4vh; font-weight: 700; color: var(--muted); letter-spacing: .26em; text-transform: uppercase; text-align: center; }
+#sim-overlay .ol-route { font-size: 6vh; font-weight: 850; letter-spacing: .1em; text-align: center; }
+#sim-overlay .ol-btn {
+  margin-top: 3vh; padding: 2.2vh 4.5vw; border-radius: 999px;
+  border: 0.4vh solid var(--ok); color: var(--ok);
+  font-size: 2.5vh; font-weight: 800; letter-spacing: .2em; text-transform: uppercase;
+  animation: connpulse 1.9s ease-in-out infinite;
+}
+</style>
+</head>
+<body class="s-idle">
+<div id="ambient"></div>
+
+<header>
+  <div class="brand-left">
+    <svg class="qclogo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-label="QC">
+      <!-- Q·Check: la Q cuyo rabo es un checkmark -->
+      <path d="M 69.7 93.6 A 40 40 0 1 1 95.85 59.49" fill="none" stroke="var(--logo-navy)" stroke-width="15"/>
+      <polyline points="62,64 86,82 114,46" fill="none" stroke="#96c93d" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="brand-name">Segarra Engineering</div>
+      <div class="meta-line" id="proj-line" style="margin-top:0.9vh">PR-52</div>
+    </div>
+  </div>
+  <div class="clock">
+    <div class="hm" id="clock-hm">--:--</div>
+    <div class="dt" id="clock-dt">—</div>
+    <div class="conn" id="conn"><i></i><span>Online</span></div>
+  </div>
+</header>
+
+<div class="stage">
+  <div class="truck">
+    <div class="lbl">Camión</div>
+    <div class="num" id="truck-num">—</div>
+    <div class="sub" id="truck-sub">Sin camiones registrados hoy</div>
+    <div class="plant" id="truck-plant" style="display:none"><i></i><span></span></div>
+  </div>
+  <div class="verdict v-idle" id="verdict">
+    <div class="ring">—</div>
+    <div class="word">EN ESPERA</div>
+    <div class="note">QC en vivo</div>
+  </div>
+</div>
+
+<div class="indics" id="indics"></div>
+
+<footer id="totals"></footer>
+
+<script src="seed.js"></script>
+<script src="core.js"></script>
+<script>
+"use strict";
+
+/* Proximity to the suspension limits, as a fraction of the margin
+   between target and limit: last third = red, middle third = amber,
+   comfortably away = no color, no glow. Beyond a limit = red. */
+function proxRange(v, target, suspLo, suspHi) {
+  if (v == null) return null;
+  if ((suspLo != null && v < suspLo) || (suspHi != null && v > suspHi)) return "red";
+  const side = v >= target ? suspHi - target : target - suspLo;
+  if (!(side > 0)) return null;
+  const d = v >= target ? suspHi - v : v - suspLo;
+  const p = d / side;
+  if (p <= 0.34) return "red";
+  if (p <= 0.67) return "amber";
+  return null;
+}
+function proximity(key, t) {
+  const p = db.plan;
+  if (key === "slump") return proxRange(num(t.slump), p.slump.target, p.slump.suspLo, p.slump.suspHi);
+  if (key === "air") return proxRange(num(t.air), p.air.target, p.air.suspLo, p.air.suspHi);
+  if (key === "uw") {
+    const target = num(t.uwTarget) ?? p.uw.target;
+    return proxRange(num(t.uw), target, target - p.uw.susp, target + p.uw.susp);
+  }
+  if (key === "temp") {
+    const v = num(t.temp);
+    if (v == null) return null;
+    if (v > p.tempMax) return "red";
+    const d = (p.tempMax - v) / 10; // reference span: 10 °F below the max
+    if (d <= 0.34) return "red";
+    if (d <= 0.67) return "amber";
+    return null;
+  }
+  return null;
+}
+
+/* plant name display: "01-SAN JUAN" → "Planta San Juan" */
+function prettyPlant(p) {
+  if (!p) return null;
+  const name = String(p).replace(/^\d+\s*-\s*/, "").toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return /planta/i.test(name) ? name : "Planta " + name;
+}
+function setPlant(p) {
+  const el = document.getElementById("truck-plant");
+  const name = prettyPlant(p);
+  el.style.display = name ? "flex" : "none";
+  if (name) el.querySelector("span").textContent = name;
+}
+
+/* 12-hour time display (data is stored as 24h HH:MM) */
+function fmt12(hm) {
+  if (!hm) return null;
+  let [h, m] = hm.split(":").map(Number);
+  const ap = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return h + ":" + String(m).padStart(2, "0") + '<span style="font-size:.38em; font-weight:600; letter-spacing:.08em"> ' + ap + "</span>";
+}
+
+function cell(k, v, u, prox, dp) {
+  return `<div class="cell ${prox ? "p-" + prox : ""}">
+    <div class="k"><i></i>${k}</div>
+    <div class="v">${v == null ? "—" : fmt(v, dp)}</div>
+    <div class="u">${u}</div>
+  </div>`;
+}
+
+/* Anuncia con sonido los cambios reales: llegó un camión / salieron los resultados.
+   Suena una sola vez por evento; el primer render tras abrir la pantalla no suena. */
+const ANN = { arrival: null, verdict: null, primed: false };
+function announce(t) {
+  const arrivalKey = t.n + "|" + (t.arrive || "");
+  const verdictKey = t.resultsAt ? t.n + "|" + t.resultsAt + "|" + (t.rejected ? "R" : "A") : null;
+  if (!ANN.primed) { ANN.arrival = arrivalKey; ANN.verdict = verdictKey; ANN.primed = true; return; }
+  if (verdictKey && verdictKey !== ANN.verdict) {
+    ANN.verdict = verdictKey; ANN.arrival = arrivalKey;
+    playSnd(t.rejected || worstZone(t) === "susp" ? "bad" : "ok");
+    return;
+  }
+  if (arrivalKey !== ANN.arrival) { ANN.arrival = arrivalKey; playSnd("arrive"); }
+}
+
+function render() {
+  if (SIM.active) return; // simulation drives the screen
+  const days = testDates();
+  const today = todayISO();
+  const day = days.includes(today) ? today : days[0];
+  const rows = day ? testsOfDate(day) : [];
+  const last = rows[rows.length - 1];
+  const cy = rows.reduce((a, t) => a + (num(t.vol) || 0), 0);
+  const nRej = rows.filter((t) => t.rejected).length;
+  const meta = (db.dayMeta && db.dayMeta[day]) || {};
+
+  document.getElementById("proj-line").textContent =
+    ["PR-52", meta.fase ? "Fase " + meta.fase : null, meta.lane ? "Carril " + meta.lane : null, meta.km ? "Km " + meta.km : null]
+      .filter(Boolean).join("  ·  ");
+
+  const verdict = document.getElementById("verdict");
+  if (!last) {
+    document.body.className = "s-idle";
+    document.getElementById("truck-num").textContent = "—";
+    document.getElementById("truck-sub").innerHTML = "Sin camiones registrados hoy";
+    setPlant(null);
+    ANN.primed = true;
+    verdict.className = "verdict v-idle";
+    verdict.innerHTML = `<div class="ring">—</div><div class="word">EN ESPERA</div><div class="note">QC en vivo</div>`;
+    document.getElementById("indics").innerHTML =
+      cell("Slump", null, "in", null) + cell("Peso Unit", null, "pcf", null) +
+      cell("Aire", null, "%", null) + cell("Temp", null, "°F", null) + cell("Hora", null, "", null);
+  } else {
+    const w = worstZone(last);
+    const bad = last.rejected || w === "susp";
+    // Sin resultados todavía = en pruebas (no se puede aceptar lo que no se ha probado)
+    const testing = !last.rejected && num(last.slump) == null && num(last.uw) == null;
+    // Verdict color follows the decision itself: accepted = green, rejected = red.
+    const s = testing ? "idle" : bad ? "susp" : "ok";
+    document.body.className = "s-" + s;
+    document.getElementById("truck-num").textContent = last.truck || "—";
+    document.getElementById("truck-sub").innerHTML =
+      `Ticket <b>${esc(last.ticket || "—")}</b> · Load <b>#${rows.length}</b>${last.vol ? ` · <b>${fmt(last.vol, 1)}</b> CY` : ""}`;
+    setPlant(last.plant);
+    verdict.className = "verdict v-" + s;
+    verdict.innerHTML = testing
+      ? `<div class="ring" style="animation: connpulse 1.6s ease-in-out infinite">···</div>
+         <div class="word">EN PRUEBAS</div><div class="note">Tomando muestras · QC</div>`
+      : bad
+        ? `<div class="ring">✕</div><div class="word">RECHAZADO</div><div class="note">No descargar</div>`
+        : w === "act"
+          ? `<div class="ring">✓</div><div class="word">ACEPTADO</div><div class="note">Zona de acción · QC vigilando</div>`
+          : `<div class="ring">✓</div><div class="word">ACEPTADO</div><div class="note">Proceda a descargar</div>`;
+
+    // Anuncio en vivo: llegada de camión y veredicto enviado desde Muestras
+    announce(last);
+
+    const hora = last.end || last.testTime || last.start || last.arrive || null;
+    document.getElementById("indics").innerHTML =
+      cell("Slump", num(last.slump), "in", proximity("slump", last), 2) +
+      cell("Peso Unit", num(last.uw), "pcf", proximity("uw", last), 1) +
+      cell("Aire", num(last.air), "%", proximity("air", last), 1) +
+      cell("Temp", num(last.temp), "°F", proximity("temp", last), 0) +
+      `<div class="cell"><div class="k"><i></i>Hora</div><div class="v" style="font-size:7.6vh">${fmt12(hora) || "—"}</div><div class="u">último registro</div></div>`;
+  }
+
+  document.getElementById("totals").innerHTML = `
+    <div class="tot"><span class="k">Yardas hoy</span><span class="v">${fmt(cy, 1)}</span><span class="u">CY</span></div>
+    <div class="tot"><span class="k">Loads</span><span class="v">${rows.length}</span></div>
+    <div class="tot ${nRej ? "warn" : ""}"><span class="k">Rechazados</span><span class="v">${nRej}</span></div>`;
+}
+
+function updateConn() {
+  const el = document.getElementById("conn");
+  const on = navigator.onLine;
+  el.className = "conn" + (on ? "" : " off");
+  el.querySelector("span").textContent = on ? "Online" : "Offline";
+}
+window.addEventListener("online", updateConn);
+window.addEventListener("offline", updateConn);
+
+function tickClock() {
+  const d = new Date();
+  let h = d.getHours();
+  const ap = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  document.getElementById("clock-hm").innerHTML =
+    h + ":" + String(d.getMinutes()).padStart(2, "0") +
+    '<span style="font-size:.42em; font-weight:500; color:var(--muted)"> ' + ap + "</span>";
+  document.getElementById("clock-dt").textContent =
+    d.toLocaleDateString("es-PR", { weekday: "long", day: "numeric", month: "long" });
+}
+
+/* Fullscreen seguro: en iPhone no existe la API — no debe romper nada */
+function goFullscreen() {
+  const el = document.documentElement;
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!fn) return;
+  try { const p = fn.call(el); if (p && p.catch) p.catch(() => {}); } catch (_) {}
+}
+function exitFullscreenSafe() {
+  const fn = document.exitFullscreen || document.webkitExitFullscreen;
+  if (!fn) return;
+  try { const p = fn.call(document); if (p && p.catch) p.catch(() => {}); } catch (_) {}
+}
+document.body.addEventListener("click", () => {
+  ensureAudio(); // silent unlock, no banner
+  if (document.fullscreenElement || document.webkitFullscreenElement) exitFullscreenSafe();
+  else goFullscreen();
+});
+
+/* ============================================================
+   MODO SIMULACIÓN (?sim en el URL, o QC_SIM_AUTO en el demo web)
+   Ciclo por camión: llega (sonido) → 5 s de pruebas →
+   veredicto ACEPTADO/RECHAZADO (sonido) por 10 s → siguiente.
+   ============================================================ */
+const SIM = { active: false, i: 0, loads: 11, cy: 112.5, rej: 0 };
+
+const SIM_TRUCKS = [
+  { truck: "115", ticket: "66901", vol: 10, slump: 3.25, uw: 150.3, air: 1.2, temp: 88, bad: false, plant: "Planta San Juan" },
+  { truck: "122", ticket: "66902", vol: 10, slump: 3.5,  uw: 149.8, air: 1.4, temp: 90, bad: false, plant: "Planta Gurabo" },
+  { truck: "108", ticket: "66903", vol: 10, slump: 3.0,  uw: 150.1, air: 1.3, temp: 97, bad: true,
+    reason: "TEMPERATURA 97 °F — MÁX 95", plant: "Planta San Juan" },
+  { truck: "131", ticket: "66904", vol: 10, slump: 2.75, uw: 150.6, air: 1.1, temp: 89, bad: false, plant: "Planta Gurabo" },
+];
+
+/* ---------- sonidos (WebAudio, sin archivos) ---------- */
+let actx = null;
+let soundOn = localStorage.getItem("qc-sound") !== "off"; // habilitado por defecto
+function audioLocked() { return !actx || actx.state !== "running"; }
+let pendingSnd = null; // sonido de un evento que ocurrió con el audio aún bloqueado
+function ensureAudio() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (actx && actx.state === "suspended") {
+    actx.resume().then(() => {
+      // al desbloquear, suena de inmediato el último evento pendiente
+      if (pendingSnd && soundOn) { const k = pendingSnd; pendingSnd = null; SNDS[k](); }
+    }).catch(() => {});
+  }
+}
+function playSnd(kind) {
+  if (!soundOn || document.hidden) return;
+  if (audioLocked()) { pendingSnd = kind; ensureAudio(); return; }
+  SNDS[kind]();
+}
+function toggleSound() {
+  soundOn = !soundOn;
+  localStorage.setItem("qc-sound", soundOn ? "on" : "off");
+  if (soundOn) ensureAudio();
+  updateSoundBtn();
+}
+const ICON_SPK = `<svg viewBox="0 0 24 24" style="width:58%;height:58%" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 5.2 7 9H3.6v6H7l4.5 3.8z" fill="currentColor" stroke="none"/><path d="M15.4 9a4.4 4.4 0 0 1 0 6M18.1 6.6a8 8 0 0 1 0 10.8"/></svg>`;
+const ICON_MUTE = `<svg viewBox="0 0 24 24" style="width:58%;height:58%" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 5.2 7 9H3.6v6H7l4.5 3.8z" fill="currentColor" stroke="none"/><path d="M15.8 9.6l5 4.8M20.8 9.6l-5 4.8"/></svg>`;
+function updateSoundBtn() {
+  const b = document.getElementById("sound-toggle");
+  if (!b) return;
+  b.innerHTML = soundOn ? ICON_SPK : ICON_MUTE;
+  b.classList.toggle("muted", !soundOn);
+  b.title = soundOn ? "Silenciar" : "Activar sonido";
+}
+function mountSoundToggle() {
+  const b = document.createElement("button");
+  b.id = "sound-toggle"; b.className = "sound-toggle";
+  b.onclick = (e) => { e.stopPropagation(); toggleSound(); };
+  document.body.appendChild(b);
+  updateSoundBtn();
+}
+function tone(f, t0, dur, type = "sine", g = 0.2) {
+  if (!soundOn || audioLocked()) return;
+  const o = actx.createOscillator(), gn = actx.createGain();
+  o.type = type; o.frequency.value = f;
+  o.connect(gn); gn.connect(actx.destination);
+  const t = actx.currentTime + t0;
+  gn.gain.setValueAtTime(0, t);
+  gn.gain.linearRampToValueAtTime(g, t + 0.02);
+  gn.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+const sndArrive = () => { tone(587, 0, 0.16, "sine", 0.28); tone(784, 0.18, 0.16, "sine", 0.28); tone(988, 0.36, 0.4, "sine", 0.28); }; // campana de llegada (3 tonos)
+const sndOk     = () => { tone(523, 0, 0.14); tone(659, 0.15, 0.14); tone(784, 0.3, 0.4); }; // acorde asc.
+const sndBad    = () => { tone(210, 0, 0.32, "square", 0.16); tone(165, 0.38, 0.55, "square", 0.16); }; // bocina
+const SNDS = { arrive: sndArrive, ok: sndOk, bad: sndBad };
+
+
+/* ---------- render del ciclo ---------- */
+function simIndics(t, hora) {
+  const pseudo = { slump: t.slump, uw: t.uw, air: t.air, temp: t.temp, uwTarget: db.plan.uw.target };
+  document.getElementById("indics").innerHTML =
+    cell("Slump", t.slump, "in", proximity("slump", pseudo), 2) +
+    cell("Peso Unit", t.uw, "pcf", proximity("uw", pseudo), 1) +
+    cell("Aire", t.air, "%", proximity("air", pseudo), 1) +
+    cell("Temp", t.temp, "°F", proximity("temp", pseudo), 0) +
+    `<div class="cell"><div class="k"><i></i>Hora</div><div class="v" style="font-size:7.6vh">${fmt12(hora)}</div><div class="u">llegada</div></div>`;
+}
+function simTotals() {
+  document.getElementById("totals").innerHTML = `
+    <div class="tot"><span class="k">Yardas hoy</span><span class="v">${fmt(SIM.cy, 1)}</span><span class="u">CY</span></div>
+    <div class="tot"><span class="k">Loads</span><span class="v">${SIM.loads}</span></div>
+    <div class="tot ${SIM.rej ? "warn" : ""}"><span class="k">Rechazados</span><span class="v">${SIM.rej}</span></div>`;
+}
+function simArrival(t, hora) {
+  document.body.className = "s-idle";
+  document.getElementById("truck-num").textContent = t.truck;
+  document.getElementById("truck-sub").innerHTML =
+    `Ticket <b>${t.ticket}</b> · Load <b>#${SIM.loads}</b> · <b>${fmt(t.vol, 1)}</b> CY · llegó ${fmt12(hora)}`;
+  setPlant(t.plant);
+  const v = document.getElementById("verdict");
+  v.className = "verdict v-idle";
+  v.innerHTML = `<div class="ring" style="animation: connpulse 1.6s ease-in-out infinite">···</div>
+    <div class="word">EN PRUEBAS</div><div class="note">Tomando muestras · QC</div>`;
+  // aún no hay resultados — se toman durante esta fase
+  document.getElementById("indics").innerHTML =
+    cell("Slump", null, "in", null) + cell("Peso Unit", null, "pcf", null) +
+    cell("Aire", null, "%", null) + cell("Temp", null, "°F", null) +
+    `<div class="cell"><div class="k"><i></i>Hora</div><div class="v" style="font-size:7.6vh">${fmt12(hora)}</div><div class="u">llegada</div></div>`;
+  simTotals();
+}
+function simVerdict(t, hora) {
+  simIndics(t, hora); // los resultados aparecen junto con el veredicto
+  const v = document.getElementById("verdict");
+  if (t.bad) {
+    document.body.className = "s-susp";
+    v.className = "verdict v-susp";
+    v.innerHTML = `<div class="ring">✕</div><div class="word">RECHAZADO</div><div class="note">${t.reason || "Fuera de límites"} · No descargar</div>`;
+    playSnd("bad");
+  } else {
+    document.body.className = "s-ok";
+    v.className = "verdict v-ok";
+    v.innerHTML = `<div class="ring">✓</div><div class="word">ACEPTADO</div><div class="note">Proceda a descargar</div>`;
+    playSnd("ok");
+  }
+  simTotals();
+}
+/* Secuencia estricta de sonidos:
+   llegada → (5 s) → veredicto (aceptado o rechazado) → (15 s) → próxima llegada.
+   Nada más suena. Con la pestaña oculta no suena ni se acumulan ciclos. */
+function clearSimTimers() {
+  clearTimeout(SIM.tVerdict); clearTimeout(SIM.tNext);
+  SIM.tVerdict = SIM.tNext = null;
+}
+function simStep() {
+  clearSimTimers();
+  const t = SIM_TRUCKS[SIM.i % SIM_TRUCKS.length];
+  const hora = nowHM();
+  SIM.loads++;                                 // cada camión = +1 load
+  SIM.cy += t.vol;                             // y +10 CY a las yardas de hoy
+  playSnd("arrive");                          // sonido 1: llegó un camión
+  simArrival(t, hora);
+  SIM.tVerdict = setTimeout(() => {
+    if (t.bad) SIM.rej++;
+    simVerdict(t, hora);                       // sonido 2 (dentro): aceptado o rechazado
+    SIM.tNext = setTimeout(() => { SIM.i++; simStep(); }, 15000); // veredicto visible 15 s
+  }, 5000); // pruebas 5 s
+}
+document.addEventListener("visibilitychange", () => {
+  if (!SIM.active) return;
+  if (document.hidden) clearSimTimers();       // pausa: no acumular timers ni sonidos
+  else simStep();                              // al volver: ciclo fresco, en orden
+});
+function startSim() {
+  SIM.active = true;
+  document.getElementById("proj-line").textContent = "PR-52 · FASE 10 · CARRIL L3";
+  // silent unlock on any interaction (browser autoplay policy)
+  ["pointerdown", "touchstart", "keydown"].forEach((ev) =>
+    window.addEventListener(ev, ensureAudio));
+
+  // Pantalla de inicio: un toque = pantalla completa + sonido + arranque
+  const ol = document.createElement("div");
+  ol.id = "sim-overlay";
+  ol.innerHTML = `
+    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="height:20vh">
+      <path d="M 69.7 93.6 A 40 40 0 1 1 95.85 59.49" fill="none" stroke="var(--logo-navy)" stroke-width="15"/>
+      <polyline points="62,64 86,82 114,46" fill="none" stroke="#96c93d" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="ol-title">Field Display</div>
+    <div class="ol-brand">Segarra Engineering</div>
+    <div class="ol-route">PR-52</div>
+    <div class="ol-btn">▶&nbsp;&nbsp;Toque para comenzar</div>`;
+  ol.addEventListener("click", (e) => {
+    e.stopPropagation();
+    ensureAudio();                                            // gesto: desbloquea el audio
+    ol.remove();
+    simStep();                                                // arranca la secuencia
+    goFullscreen();                                           // en iPhone no existe: se omite sin error
+  });
+  document.body.appendChild(ol);
+}
+
+loadDB();
+initTheme("dark"); /* the field display defaults to dark */
+mountThemeToggle();
+mountSoundToggle();
+enableLiveSync(render);
+render();
+tickClock();
+updateConn();
+setInterval(tickClock, 10000);
+setInterval(render, 30000);
+if (window.QC_SIM_AUTO || new URLSearchParams(location.search).has("sim")) startSim();
+</script>
+</body>
+</html>

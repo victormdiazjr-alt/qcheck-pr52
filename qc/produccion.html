@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Producción — QC PR-52</title>
+<link rel="stylesheet" href="qc.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23122c42'/><text x='50' y='70' font-size='52' text-anchor='middle' fill='white'>⚙</text></svg>">
+<style>
+/* Producción — planta y contratista. Analytics theme. */
+body { background: var(--bg); }
+.prod-hero {
+  background: linear-gradient(120deg, #1d2f3f 0%, #2c5d8f 70%, #0f6db4 100%);
+  color: #fff; border-radius: 14px; padding: 20px 24px; margin-bottom: 18px;
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  box-shadow: 0 8px 28px rgba(15,40,70,.3);
+}
+.prod-hero h1 { margin: 0; font-size: 22px; }
+.prod-hero .sub { color: #b8cfe2; font-size: 13px; margin-top: 3px; }
+.prod-hero select {
+  margin-left: auto; padding: 9px 12px; border-radius: 9px; border: none;
+  font-size: 14.5px; font-weight: 700; background: rgba(255,255,255,.92);
+}
+.kpi { position: relative; overflow: hidden; }
+.kpi .spark { position: absolute; right: 10px; bottom: 8px; opacity: .85; }
+.kpi .value { font-size: 30px; }
+.eff-note { font-size: 12px; color: var(--ink-soft); margin-top: -8px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<header class="qc-header">
+  <div class="brand">
+    <a href="portal.html" style="text-decoration:none"><span class="logo">QC</span></a>
+    <div>
+      <div class="title">Producción — Planta</div>
+      <div class="subtitle">e-Ticket · rendimiento · eficiencia · calidad</div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <a class="btn small" style="margin:10px 0" href="display.html" target="_blank">🖥 Field Display</a>
+  </nav>
+</header>
+
+<main>
+  <div class="prod-hero">
+    <div>
+      <h1>Producción del vaciado</h1>
+      <div class="sub" id="hero-sub">—</div>
+    </div>
+    <select id="day-sel" onchange="state.day=this.value; render()"></select>
+  </div>
+
+  <div id="content"></div>
+</main>
+
+<div id="modal-root"></div>
+<div id="toast"></div>
+
+<script src="seed.js"></script>
+<script src="core.js"></script>
+<script>
+"use strict";
+const state = { day: null };
+
+/* ---------- custom SVG: cumulative CY over the day ---------- */
+function cumChart(rows) {
+  const pts = rows.filter((t) => (t.end || t.start || t.arrive) && num(t.vol) != null)
+    .map((t) => ({ time: t.end || t.start || t.arrive, vol: num(t.vol), truck: t.truck, ticket: t.ticket, rejected: t.rejected }));
+  if (pts.length < 2) return `<div class="empty">Datos de tiempo insuficientes.</div>`;
+  const toMin = (hm) => { const [h, m] = hm.split(":").map(Number); return h * 60 + m; };
+  pts.sort((a, b) => toMin(a.time) - toMin(b.time));
+  let acc = 0;
+  const series = pts.map((p) => ({ ...p, min: toMin(p.time), acc: (acc += p.rejected ? 0 : p.vol) }));
+  const W = 860, H = 260, ML = 52, MR = 16, MT = 14, MB = 30;
+  const x0 = series[0].min - 10, x1 = series[series.length - 1].min + 10;
+  const yMax = Math.max(acc, 10) * 1.08;
+  const X = (m) => ML + (m - x0) / (x1 - x0) * (W - ML - MR);
+  const Y = (v) => MT + (1 - v / yMax) * (H - MT - MB);
+  let g = "";
+  for (let v = 0; v <= yMax; v += 50) {
+    g += `<line x1="${ML}" x2="${W - MR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--chart-grid, #e3e9ef)"/>`;
+    g += `<text x="${ML - 6}" y="${Y(v) + 3}" text-anchor="end" font-size="10" fill="var(--chart-text, #5a6b7c)">${v}</text>`;
+  }
+  for (let m = Math.ceil(x0 / 60) * 60; m <= x1; m += 60)
+    g += `<text x="${X(m)}" y="${H - 10}" text-anchor="middle" font-size="10" fill="var(--chart-text, #5a6b7c)">${String(Math.floor(m / 60)).padStart(2, "0")}:00</text>`;
+  // step area
+  let path = `M ${X(series[0].min)} ${Y(0)}`;
+  let prevAcc = 0;
+  for (const p of series) { path += ` L ${X(p.min)} ${Y(prevAcc)} L ${X(p.min)} ${Y(p.acc)}`; prevAcc = p.acc; }
+  g += `<path d="${path} L ${X(series[series.length - 1].min)} ${Y(0)} Z" fill="rgba(15,109,180,.15)"/>`;
+  g += `<path d="${path}" fill="none" stroke="#0f6db4" stroke-width="2.2"/>`;
+  for (const p of series) {
+    g += p.rejected
+      ? `<g><title>RECHAZADO · camión ${p.truck} · ${p.time}</title><path d="M${X(p.min) - 4},${Y(p.acc) - 4} l8,8 M${X(p.min) + 4},${Y(p.acc) - 4} l-8,8" stroke="#c5221f" stroke-width="2.2"/></g>`
+      : `<circle cx="${X(p.min)}" cy="${Y(p.acc)}" r="3.6" fill="#0f6db4" stroke="#fff" stroke-width="1.2"><title>${p.time} · camión ${p.truck || "—"} · ticket ${p.ticket || "—"} · acumulado ${fmt(p.acc, 1)} CY</title></circle>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%; max-width:${W}px; display:block" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
+}
+
+/* ---------- custom SVG: per-truck cycle bars ---------- */
+function cycleChart(rows) {
+  const items = rows.map((t, i) => ({
+    load: i + 1, truck: t.truck, ticket: t.ticket,
+    cycle: minutesBetween(t.batch, t.end),
+    wait: minutesBetween(t.arrive, t.start),
+    rejected: t.rejected,
+  })).filter((x) => x.cycle != null);
+  if (!items.length) return `<div class="empty">Sin tiempos batch→termina.</div>`;
+  const W = 860, H = 240, ML = 40, MR = 14, MT = 12, MB = 26;
+  const bw = Math.min(44, (W - ML - MR) / items.length - 6);
+  const yMax = Math.max(db.plan.maxElapsedMin + 15, ...items.map((x) => x.cycle)) * 1.06;
+  const X = (i) => ML + i * ((W - ML - MR) / items.length) + ((W - ML - MR) / items.length - bw) / 2;
+  const Y = (v) => MT + (1 - v / yMax) * (H - MT - MB);
+  let g = "";
+  for (let v = 0; v <= yMax; v += 30) {
+    g += `<line x1="${ML}" x2="${W - MR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--chart-grid, #e3e9ef)"/>`;
+    g += `<text x="${ML - 5}" y="${Y(v) + 3}" text-anchor="end" font-size="10" fill="var(--chart-text, #5a6b7c)">${v}</text>`;
+  }
+  g += `<line x1="${ML}" x2="${W - MR}" y1="${Y(db.plan.maxElapsedMin)}" y2="${Y(db.plan.maxElapsedMin)}" stroke="#c5221f" stroke-dasharray="6 4" stroke-width="1.6"/>`;
+  g += `<text x="${W - MR}" y="${Y(db.plan.maxElapsedMin) - 5}" text-anchor="end" font-size="10.5" font-weight="700" fill="#c5221f">límite ${db.plan.maxElapsedMin} min</text>`;
+  items.forEach((x, i) => {
+    const over = x.cycle > db.plan.maxElapsedMin;
+    const col = x.rejected ? "#c5221f" : over ? "#e8710a" : "#2c7fb8";
+    g += `<rect x="${X(i)}" y="${Y(x.cycle)}" width="${bw}" height="${Y(0) - Y(x.cycle)}" rx="3" fill="${col}">
+      <title>Load ${x.load} · camión ${x.truck || "—"} · batch→termina ${x.cycle} min${x.wait != null ? " · espera " + x.wait + " min" : ""}${x.rejected ? " · RECHAZADO" : ""}</title></rect>`;
+    if (x.wait != null)
+      g += `<rect x="${X(i)}" y="${Y(x.wait)}" width="${bw}" height="${Y(0) - Y(x.wait)}" rx="3" fill="var(--chart-wait, rgba(18,44,66,.35))"/>`;
+    g += `<text x="${X(i) + bw / 2}" y="${H - 8}" text-anchor="middle" font-size="9.5" fill="var(--chart-text, #5a6b7c)">${x.truck || x.load}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%; max-width:${W}px; display:block" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
+}
+
+function kpi(label, value, sub, cls = "") {
+  return `<div class="stat kpi ${cls}"><div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub}</div></div>`;
+}
+
+function render() {
+  const days = testDates();
+  if (!state.day || !days.includes(state.day)) state.day = days[0];
+  const sel = document.getElementById("day-sel");
+  sel.innerHTML = days.map((d) => `<option value="${d}" ${d === state.day ? "selected" : ""}>${fmtDate(d)}</option>`).join("");
+  const s = dayStats(state.day);
+  const meta = db.dayMeta[state.day] || {};
+  // Privacidad: la concretera no ve informacion del proyecto (Ruben, 30 jul)
+  document.getElementById("hero-sub").textContent =
+    "Cliente: " + (db.project.contractor || "—") + " · " + fmtDate(state.day);
+
+  const onSite = s.rows.filter((t) => t.arrive && !t.end && !t.rejected);
+  const over90 = s.rows.filter((t) => { const el = minutesBetween(t.batch, t.end); return el != null && el > db.plan.maxElapsedMin; }).length;
+
+  // last 7 pour days summary
+  const week = days.slice(0, 7).map((d) => ({ d, s: dayStats(d) }));
+
+  document.getElementById("content").innerHTML = `
+    <div class="grid cols-4" style="margin-bottom:6px">
+      ${kpi("Volumen colocado", fmt(s.cy, 1) + " <span style='font-size:14px'>CY</span>", s.loads + " loads · " + fmtDate(state.day))}
+      ${kpi("Ritmo", s.cyPerHr ? fmt(s.cyPerHr, 1) + " <span style='font-size:14px'>CY/hr</span>" : "—",
+        s.loadsPerHr ? fmt(s.loadsPerHr, 1) + " loads/hr · " + (s.firstStart || "") + "–" + (s.lastEnd || "") : "sin tiempos")}
+      ${kpi("Ciclo batch→descarga", s.avgCycle ? fmt(s.avgCycle, 0) + " <span style='font-size:14px'>min</span>" : "—",
+        "máx " + (s.maxCycle ?? "—") + " min · límite " + db.plan.maxElapsedMin, over90 ? "alert" : "good")}
+      ${kpi("Espera en sitio", s.avgWait ? fmt(s.avgWait, 0) + " <span style='font-size:14px'>min</span>" : "—",
+        "llegada → comienza vaciado", s.avgWait > 30 ? "alert" : "")}
+    </div>
+    <div class="grid cols-4" style="margin-bottom:16px">
+      ${kpi("Camiones en sitio", onSite.length, onSite.length ? onSite.map((t) => t.truck || t.ticket).join(", ") : "ninguno descargando", onSite.length ? "good" : "")}
+      ${kpi("Rechazados", s.rejected, s.rejected ? "revisar causas" : "0 hoy", s.rejected ? "alert" : "good")}
+      ${kpi("Sobre 90 min", over90, "batch → fin de descarga", over90 ? "alert" : "good")}
+      ${kpi("Duración del vaciado", s.hours ? fmt(s.hours, 1) + " <span style='font-size:14px'>hr</span>" : "—", (s.firstStart || "—") + " a " + (s.lastEnd || "—"))}
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Yardas acumuladas durante el día</h2></div>
+      <div class="panel-body">${cumChart(s.rows)}</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Ciclo por camión (batch → termina descarga)</h2>
+        <span class="muted" style="font-size:12px">barra oscura interior = espera llegada→comienza</span></div>
+      <div class="panel-body">${cycleChart(s.rows)}</div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="panel">
+        <div class="panel-head"><h2>Control del día — Slump</h2><div class="spacer"></div><span class="muted" style="font-size:12px">${trendLabel(state.day, "slump")}</span></div>
+        <div class="panel-body"><div class="chart-scroll">${chartForDay(CHART_DEFS[0], state.day, 24)}</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Control del día — Peso unitario</h2><div class="spacer"></div><span class="muted" style="font-size:12px">${trendLabel(state.day, "uw")}</span></div>
+        <div class="panel-body"><div class="chart-scroll">${chartForDay(CHART_DEFS[2], state.day, 24)}</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Últimos ${week.length} días de vaciado</h2></div>
+      <div class="panel-body flush"><div class="table-wrap"><table class="data">
+        <tr><th>Fecha</th><th class="num">Loads</th><th class="num">CY</th><th class="num">CY/hr</th>
+            <th class="num">Ciclo prom (min)</th><th class="num">Espera prom (min)</th><th class="num">Rechazados</th></tr>
+        ${week.map((w) => `<tr class="clickable" onclick="state.day='${w.d}'; render(); window.scrollTo({top:0,behavior:'smooth'})">
+          <td><b>${fmtDate(w.d)}</b></td>
+          <td class="num mono">${w.s.loads}</td>
+          <td class="num mono">${fmt(w.s.cy, 1)}</td>
+          <td class="num mono">${w.s.cyPerHr ? fmt(w.s.cyPerHr, 1) : "—"}</td>
+          <td class="num mono">${w.s.avgCycle ? fmt(w.s.avgCycle, 0) : "—"}</td>
+          <td class="num mono">${w.s.avgWait ? fmt(w.s.avgWait, 0) : "—"}</td>
+          <td class="num mono" style="${w.s.rejected ? "color:var(--susp); font-weight:700" : ""}">${w.s.rejected}</td>
+        </tr>`).join("")}
+      </table></div></div>
+    </div>`;
+}
+
+loadDB();
+initTheme();
+mountThemeToggle();
+enableLiveSync(render);
+render();
+</script>
+</body>
+</html>

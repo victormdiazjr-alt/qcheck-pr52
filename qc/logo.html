@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logo QC — propuestas</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+.half { padding: 48px 6vw 64px; }
+.dark { background: #0a0d12; color: #eef2f6; }
+.light { background: #f2f4f7; color: #16222e; }
+h1 { font-size: 22px; margin-bottom: 6px; }
+.sub { font-size: 13px; opacity: .6; margin-bottom: 36px; }
+.row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4vw; max-width: 1100px; }
+.opt { text-align: center; }
+.opt .name { font-weight: 800; font-size: 15px; margin-top: 18px; letter-spacing: .04em; }
+.opt .why { font-size: 12.5px; opacity: .6; margin-top: 6px; line-height: 1.5; max-width: 300px; margin-left: auto; margin-right: auto; }
+.opt .tag { display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .18em; padding: 3px 10px; border-radius: 999px; background: #96c93d; color: #10240a; margin-bottom: 14px; }
+svg.big { width: 200px; height: 200px; }
+.minis { display: flex; gap: 26px; align-items: center; justify-content: center; margin-top: 14px; opacity: .9; }
+</style>
+</head>
+<body>
+
+<div class="half dark">
+  <h1>Logo QC — propuesta</h1>
+  <div class="sub">Sobre fondo oscuro (Pantalla de Campo) · Paleta Segarra: azul marino + verde lima</div>
+  <div class="row" id="row-dark"></div>
+</div>
+<div class="half light">
+  <h1>&nbsp;</h1>
+  <div class="sub">Sobre fondo claro (documentos, reportes, modo claro)</div>
+  <div class="row" id="row-light"></div>
+</div>
+
+<script>
+const NAVY_D = "#3d55c9", NAVY_L = "#2b3a8c"; // navy tuned per background
+const GREEN = "#96c93d";
+
+function optA(navy) { return `
+<svg class="big" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <path d="M 69.7 93.6 A 40 40 0 1 1 95.85 59.49" fill="none" stroke="${navy}" stroke-width="15"/>
+  <polyline points="62,64 86,82 114,46" fill="none" stroke="${GREEN}" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`; }
+
+function optB(navy) { return `
+<svg class="big" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <path d="M 20.4 76.9 A 40 40 0 1 1 91.6 76.9" fill="none" stroke="${navy}" stroke-width="15"/>
+  <path d="M 91.6 76.9 A 40 40 0 0 1 74.1 91.9" fill="none" stroke="${GREEN}" stroke-width="15"/>
+  <path d="M 20.4 76.9 A 40 40 0 0 0 37.9 91.9" fill="none" stroke="#e8a013" stroke-width="15"/>
+  <rect x="66" y="66" width="16" height="42" rx="8" transform="rotate(-45 74 87)" fill="${navy}"/>
+</svg>`; }
+
+function optC(navy, onDark) { return `
+<svg class="big" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <rect x="8" y="8" width="104" height="104" rx="24" fill="${navy}"/>
+  <text x="58" y="82" text-anchor="middle" font-family="Arial Black, Arial" font-weight="900" font-size="58" fill="#fff" letter-spacing="-3">QC</text>
+  <circle cx="93" cy="30" r="12" fill="${GREEN}"/>
+  <polyline points="87.5,30 91.5,34.5 99,26" fill="none" stroke="#10240a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`; }
+
+function mini(fn, navy, s) { return fn(navy).replace('class="big"', `style="width:${s}px;height:${s}px"`); }
+
+function block(fn, navy, name, why, tag) {
+  return `<div class="opt">
+    ${tag ? '<div class="tag">RECOMENDADO</div>' : '<div style="height:34px"></div>'}
+    ${fn(navy)}
+    <div class="minis">${mini(fn, navy, 48)}${mini(fn, navy, 28)}${mini(fn, navy, 16)}</div>
+    <div class="name">${name}</div>
+    <div class="why">${why}</div>
+  </div>`;
+}
+
+function renderRow(el, navy) {
+  el.innerHTML =
+    block(optA, navy, "A — Q·Check", "El rabo de la Q es un checkmark: calidad y «camión aceptado» en un solo gesto. Funciona de 16 px a un rótulo de camión.", true) +
+    block(optB, navy, "B — Q·Gauge", "La Q como carta de control: zona verde y zona de acción en el anillo, la aguja es el rabo. Más literal, más técnico.", false) +
+    block(optC, navy, "C — Monograma", "Sello sólido con QC y el punto verde de verificación. El más corporativo; ideal para documentos y sellos de reporte.", false);
+}
+renderRow(document.getElementById("row-dark"), NAVY_D);
+renderRow(document.getElementById("row-light"), NAVY_L);
+</script>
+</body>
+</html>

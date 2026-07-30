@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QC PR-52 — Portal</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230f6db4'/><text x='50' y='68' font-size='46' font-weight='bold' text-anchor='middle' fill='white' font-family='Arial'>QC</text></svg>">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background:
+    radial-gradient(1100px 500px at 85% -10%, rgba(232,113,10,.25), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(15,109,180,.35), transparent 60%),
+    linear-gradient(160deg, #0b1c2c 0%, #122c42 55%, #173a58 100%);
+  color: #fff;
+  padding: 5vh 5vw 8vh;
+}
+.hero { max-width: 1100px; margin: 0 auto 4.5vh; }
+.hero .badge-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.hero .logo {
+  background: #e8710a; color: #fff; font-weight: 900; padding: 8px 16px;
+  border-radius: 12px; font-size: 26px; letter-spacing: 1px;
+  box-shadow: 0 8px 24px rgba(232,113,10,.4);
+}
+.hero .route {
+  font-size: 13px; font-weight: 800; letter-spacing: .3em; color: #9fc0ea; text-transform: uppercase;
+}
+.hero h1 { font-size: clamp(26px, 4vw, 42px); line-height: 1.12; font-weight: 900; }
+.hero h1 .thin { color: #9fc0ea; font-weight: 600; }
+.hero p { color: #b9cede; margin-top: 12px; max-width: 640px; font-size: 15px; line-height: 1.55; }
+.live-dot { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: .12em; color: #4fe085; }
+.live-dot i { width: 9px; height: 9px; border-radius: 50%; background: #4fe085; animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(79,224,133,.5);} 50% { box-shadow: 0 0 0 8px rgba(79,224,133,0);} }
+
+.cards {
+  max-width: 1100px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;
+}
+.card {
+  display: block; text-decoration: none; color: #fff;
+  background: rgba(255,255,255,.065);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  padding: 22px 22px 18px;
+  backdrop-filter: blur(8px);
+  transition: transform .18s, background .18s, border-color .18s;
+  position: relative; overflow: hidden;
+}
+.card:hover { transform: translateY(-4px); background: rgba(255,255,255,.11); border-color: rgba(255,255,255,.3); }
+.card .ico { width: 52px; height: 52px; margin-bottom: 14px; display: block; }
+.card h2 { font-size: 18.5px; margin-bottom: 6px; }
+.card p { color: #b9cede; font-size: 13.5px; line-height: 1.5; min-height: 60px; }
+.card .go { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 800; letter-spacing: .06em; color: #7fc0ff; }
+.card:hover .go { color: #fff; }
+.card .tag {
+  position: absolute; top: 16px; right: 16px;
+  font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.12); color: #cfe2f5;
+}
+.foot { max-width: 1100px; margin: 5vh auto 0; color: #7d94a9; font-size: 12px; line-height: 1.6; }
+.foot b { color: #a8c0d5; }
+
+/* ---------- light theme ---------- */
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(1100px 500px at 85% -10%, rgba(232,113,10,.14), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(15,109,180,.16), transparent 60%),
+    linear-gradient(160deg, #f2f5f8 0%, #e9eef4 55%, #e2eaf2 100%);
+  color: #16222e;
+}
+:root[data-theme="light"] .hero .route { color: #4e6478; }
+:root[data-theme="light"] .hero h1 .thin { color: #5d7286; }
+:root[data-theme="light"] .hero p { color: #4c5f70; }
+:root[data-theme="light"] .card {
+  color: #16222e;
+  background: rgba(255,255,255,.75);
+  border-color: rgba(15,40,70,.12);
+  box-shadow: 0 4px 18px rgba(15,40,70,.08);
+}
+:root[data-theme="light"] .card:hover { background: rgba(255,255,255,.95); border-color: rgba(15,40,70,.25); }
+:root[data-theme="light"] .card p { color: #4c5f70; }
+:root[data-theme="light"] .card .go { color: #0f6db4; }
+:root[data-theme="light"] .card:hover .go { color: #16222e; }
+:root[data-theme="light"] .card .tag { background: rgba(15,60,105,.08); color: #3d5870; }
+:root[data-theme="light"] .foot { color: #6b7f92; }
+:root[data-theme="light"] .foot b { color: #44586b; }
+:root[data-theme="light"] .theme-btn { border-color: rgba(15,40,70,.5); color: #16222e; background: rgba(15,40,70,.08); }
+
+.theme-btn {
+  position: fixed; bottom: 18px; right: 18px; z-index: 300;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+  width: 52px; height: 52px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.55);
+  background: rgba(255,255,255,.14); color: #fff;
+  font-size: 23px; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,.35);
+  backdrop-filter: blur(6px);
+  transition: transform .15s, border-color .15s;
+}
+.theme-btn:hover { transform: scale(1.1); border-color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge-row">
+    <span class="logo">QC</span>
+    <span class="route">PR-52 · Km 14.2 a 0.0 · SP-503</span>
+  </div>
+  <h1>Control de Hormigón <span class="thin">en vivo</span><br>para cada miembro del equipo</h1>
+  <p>Un solo registro de datos — cinco pantallas diseñadas para su usuario: el técnico que recibe
+     el conduce, el chofer que espera el visto bueno, la planta y el contratista midiendo el ritmo,
+     el ingeniero QC con las cartas de control, y la Autoridad / FHWA con la vista de cumplimiento.</p>
+  <div class="live-dot"><i></i> DATOS COMPARTIDOS EN VIVO ENTRE PANTALLAS</div>
+</div>
+
+<div class="cards">
+
+  <a class="card" href="index.html">
+    <span class="tag">Ingeniero QC</span>
+    <svg class="ico" viewBox="0 0 52 52"><rect x="3" y="6" width="46" height="34" rx="4" fill="none" stroke="#7fc0ff" stroke-width="2.5"/><polyline points="9,30 17,22 24,27 33,14 43,20" fill="none" stroke="#4fe085" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="9" y1="16" x2="43" y2="16" stroke="#e8710a" stroke-width="1.6" stroke-dasharray="4 3"/><rect x="18" y="44" width="16" height="3" rx="1.5" fill="#7fc0ff"/></svg>
+    <h2>Control Center</h2>
+    <p>La versión completa: hoja de vaciado, registro de pruebas, resistencias y media móvil,
+       cartas de control SPC, plan de límites, exportes y respaldos.</p>
+    <span class="go">Abrir Control Center →</span>
+  </a>
+
+  <a class="card" href="display.html" target="_blank">
+    <span class="tag">Choferes · Campo</span>
+    <svg class="ico" viewBox="0 0 52 52"><rect x="4" y="8" width="44" height="26" rx="3" fill="#00703C" stroke="#fff" stroke-width="2"/><text x="26" y="21" text-anchor="middle" font-size="9" font-weight="900" fill="#fff" font-family="Arial">CAMIÓN 102</text><text x="26" y="30" text-anchor="middle" font-size="7.5" font-weight="800" fill="#8ff5b5" font-family="Arial">✓ ACEPTADO</text><line x1="26" y1="34" x2="26" y2="46" stroke="#9fb0bd" stroke-width="3"/><rect x="20" y="46" width="12" height="3" rx="1.5" fill="#9fb0bd"/></svg>
+    <h2>Field Display</h2>
+    <p>El camión y su veredicto en tipografía gigante, legible en movimiento y a distancia.
+       Verde descarga, rojo no; los indicadores brillan al acercarse a los límites.</p>
+    <span class="go">Abrir pantalla (TV / tablet) →</span>
+  </a>
+
+  <a class="card" href="muestras.html">
+    <span class="tag">Técnico · iPad</span>
+    <svg class="ico" viewBox="0 0 52 52"><path d="M20 4h12v13l9 24a4 4 0 0 1-3.7 5.6H14.7A4 4 0 0 1 11 41l9-24z" fill="none" stroke="#7fc0ff" stroke-width="2.5" stroke-linejoin="round"/><path d="M14.5 33h23l3.5 8.5a3 3 0 0 1-2.8 4.3H13.8a3 3 0 0 1-2.8-4.3z" fill="#4fe085" opacity=".85"/><line x1="18" y1="4" x2="34" y2="4" stroke="#7fc0ff" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <h2>Muestras</h2>
+    <p>Entrada de resultados en el iPad: botones enormes para manos sucias, veredicto en vivo
+       y al enviar, el Field Display canta aceptado o rechazado.</p>
+    <span class="go">Abrir muestras (iPad) →</span>
+  </a>
+
+  <a class="card" href="contratista.html">
+    <span class="tag">Contratista</span>
+    <svg class="ico" viewBox="0 0 52 52"><path d="M6 40V22l20-13 20 13v18" fill="none" stroke="#7fc0ff" stroke-width="2.5" stroke-linejoin="round"/><rect x="14" y="28" width="24" height="14" rx="2" fill="none" stroke="#4fe085" stroke-width="2.5"/><line x1="14" y1="35" x2="30" y2="35" stroke="#4fe085" stroke-width="3"/><line x1="4" y1="44" x2="48" y2="44" stroke="#7fc0ff" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <h2>Contratista</h2>
+    <p>Estado del tiro en el teléfono: yardas colocadas y pendientes, losas vaciadas,
+       camiones esperando y si todo está en cumplimiento.</p>
+    <span class="go">Abrir estado del tiro →</span>
+  </a>
+
+  <a class="card" href="conduce.html">
+    <span class="tag">Recepción</span>
+    <svg class="ico" viewBox="0 0 52 52"><rect x="8" y="4" width="26" height="36" rx="3" fill="none" stroke="#7fc0ff" stroke-width="2.5"/><line x1="13" y1="12" x2="29" y2="12" stroke="#7fc0ff" stroke-width="2"/><line x1="13" y1="18" x2="29" y2="18" stroke="#7fc0ff" stroke-width="2"/><line x1="13" y1="24" x2="23" y2="24" stroke="#7fc0ff" stroke-width="2"/><rect x="28" y="26" width="20" height="20" rx="3" fill="#122c42" stroke="#4fe085" stroke-width="2.5"/><rect x="32" y="30" width="5" height="5" fill="#4fe085"/><rect x="39" y="30" width="5" height="5" fill="#4fe085"/><rect x="32" y="37" width="5" height="5" fill="#4fe085"/><rect x="39" y="37" width="2" height="2" fill="#4fe085"/><rect x="42" y="40" width="2" height="2" fill="#4fe085"/></svg>
+    <h2>Conduce</h2>
+    <p>Para quien recibe el camión: escanee el QR del conduce o tome una foto y quede adjunta;
+       entrada manual con botones AHORA para cada tiempo. Un toque por paso.</p>
+    <span class="go">Abrir entrada de conduce →</span>
+  </a>
+
+  <a class="card" href="produccion.html">
+    <span class="tag">Planta · Contratista</span>
+    <svg class="ico" viewBox="0 0 52 52"><rect x="5" y="30" width="7" height="14" rx="1.5" fill="#7fc0ff"/><rect x="15" y="22" width="7" height="22" rx="1.5" fill="#4fe085"/><rect x="25" y="26" width="7" height="18" rx="1.5" fill="#7fc0ff"/><rect x="35" y="14" width="7" height="30" rx="1.5" fill="#e8710a"/><circle cx="41" cy="9" r="6" fill="none" stroke="#4fe085" stroke-width="2"/><path d="M41 5 v4 l3 2" fill="none" stroke="#4fe085" stroke-width="2" stroke-linecap="round"/></svg>
+    <h2>Producción</h2>
+    <p>Camiones en sitio, CY/hora, ciclos batch→descarga contra el límite de 90 min, esperas,
+       yardas acumuladas del día y comparativa de los últimos vaciados.</p>
+    <span class="go">Abrir producción →</span>
+  </a>
+
+  <a class="card" href="autoridad.html">
+    <span class="tag">ACT · FHWA</span>
+    <svg class="ico" viewBox="0 0 52 52"><path d="M26 4 L44 11 V22 C44 34 36 43 26 48 C16 43 8 34 8 22 V11 Z" fill="none" stroke="#7fc0ff" stroke-width="2.5"/><polyline points="17,26 23,32 35,18" fill="none" stroke="#4fe085" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h2>Autoridad / FHWA</h2>
+    <p>Vista ejecutiva de cumplimiento: % dentro de límites, conformidad de resistencia,
+       media móvil, resumen por lote, registro de rechazos y todas las cartas de control.</p>
+    <span class="go">Open oversight view →</span>
+  </a>
+
+</div>
+
+<div class="foot">
+  <b>Prototipo QC · Reconstrucción PR-52</b> — Del Valle Group · Segarra Engineering.
+  Todas las pantallas comparten la misma base de datos y se actualizan en vivo entre ventanas
+  de este equipo. Historial cargado: 397 pruebas reales (nov 2025 – jul 2026) del Excel de control de Segarra.
+</div>
+
+<button class="theme-btn" id="theme-btn" title="Modo claro / oscuro" onclick="toggleTheme()">🌙</button>
+
+<script>
+"use strict";
+const THEME_KEY = "qc-theme";
+const ICON_SUN = `<svg viewBox="0 0 24 24" style="width:58%;height:58%" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.3"/><path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5"/></svg>`;
+const ICON_MOON = `<svg viewBox="0 0 24 24" style="width:56%;height:56%" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 14.5A8.6 8.6 0 0 1 9.5 3.8a8.6 8.6 0 1 0 10.7 10.7z"/></svg>`;
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  document.getElementById("theme-btn").innerHTML = t === "dark" ? ICON_SUN : ICON_MOON;
+}
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+}
+applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+window.addEventListener("storage", (e) => {
+  if (e.key === THEME_KEY && e.newValue) applyTheme(e.newValue);
+});
+</script>
+
+</body>
+</html>
